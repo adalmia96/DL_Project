@@ -10,7 +10,7 @@ WORKDIR /root
 # Installs pandas, and google-cloud-storage.
 RUN pip install google-cloud-storage cloudml-hypertune
 
-COPY scripts/docker_entrypoint.sh /root
+COPY scripts/docker_entrypoint.sh /root/docker_entrypoint.sh
 
 # Sets up the entry point to invoke the trainer.
 ENTRYPOINT ["/root/docker_entrypoint.sh"]

@@ -1,6 +1,6 @@
 # GANs for Natural Language Processing
 
-In our final project for deep learning, we experiment with [https://github.com/robert-d-schultz/gan-word-embedding](Robert Schultz's code) under new datasets, GAN models, and word embeddings.
+In our final project for deep learning, we experiment with [Robert Schultz's paper](https://academicworks.cuny.edu/cgi/viewcontent.cgi?article=4093&context=gc_etds) under new datasets, GAN models, and word embeddings.
 
 ## Setup and Run
 Install pytorch and python3. Run the following code for the model. This assumes your data is in `/data` if you're not using the Docker set up.

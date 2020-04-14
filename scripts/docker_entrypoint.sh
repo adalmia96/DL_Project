@@ -1,8 +1,8 @@
 #!/bin/bash
 
-WORKDIR /root
+cd /root/
 git clone https://github.com/adalmia96/DL_Project
-#mv DL_Project /root
+cd DL_Project
 
 # Get GCP datasets based on the train and dev files.
 numArgs=("$#")
@@ -10,7 +10,6 @@ args=("$@")
 
 for (( i=0; i<numArgs; i++ ))
 do
-    echo ${args[i]}
     if [[ "${args[i]}" == "--train-file" ]]
     then
         train_file=("${args[i+1]}")
@@ -19,7 +18,6 @@ do
         test_file=("${args[i+1]}")
     fi
 done
-echo $train_file
 
 if [ -z "$train_file" ] || [ -z "$test_file" ]
 then
@@ -29,10 +27,11 @@ fi
 
 BUCKET_NAME=dl-final-project
 
-TRAIN_FILE_URI=gs://${BUCKET_ID}/data/${train_file}
-TEST_FILE_URI=gs://${BUCKET_ID}/data/${test_file}
+TRAIN_FILE_URI=gs://$BUCKET_NAME/data/$train_file
+TEST_FILE_URI=gs://$BUCKET_NAME/data/$test_file
 
-RUN gsutil cp $TRAIN_FILE_URI ./${train_file}
-RUN gsutil cp $TEST_FILE_URI ./${test_file}
+echo "Downloading train and test data"
+gsutil cp $TRAIN_FILE_URI ./data/${train_file}
+gsutil cp $TEST_FILE_URI ./data/${test_file}
 
-python -u trainer/main.py $args
+python -u ./main.py $args
