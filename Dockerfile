@@ -7,8 +7,7 @@ FROM gcr.io/deeplearning-platform-release/pytorch-gpu.1-4
 
 WORKDIR /root
 
-# Installs pandas, and google-cloud-storage.
-RUN pip install google-cloud-storage cloudml-hypertune
+RUN pip install cloudml-hypertune
 
 COPY scripts/docker_entrypoint.sh /root/docker_entrypoint.sh
 

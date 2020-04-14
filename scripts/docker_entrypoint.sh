@@ -29,9 +29,13 @@ BUCKET_NAME=dl-final-project
 
 TRAIN_FILE_URI=gs://$BUCKET_NAME/data/$train_file
 TEST_FILE_URI=gs://$BUCKET_NAME/data/$test_file
+TIMESTAMP=$(date +%s)
+MODEL_URI=gs://$BUCKET_NAME/models/model_${TIMESTAMP}
 
 echo "Downloading train and test data"
 gsutil cp $TRAIN_FILE_URI ./data/${train_file}
 gsutil cp $TEST_FILE_URI ./data/${test_file}
 
-python -u ./main.py $args
+echo $args
+python -u ./main.py ${@}
+gsutil cp ./output/model $MODEL_URI

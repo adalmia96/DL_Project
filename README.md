@@ -8,5 +8,12 @@ Install pytorch and python3. Run the following code for the model. This assumes 
 python trainer/main.py --train-dataset example.train --dev-dataset example.dev --train-epochs 5 --model wgan2d --batch-size 10
 ```
 
-## Docker and GCP
-To run docker scripts, ensure you have `docker` and `gsutils` installed. Then run `./scripts/train-cloud.sh`. Ensure your data is in GCP Storage under namespace `/data`.
+## Further Setup for GCP
+Ensure you have [`gsutils`](https://cloud.google.com/storage/docs/gsutil_install) installed. Put your train and dev data in GCP Storage under namespace `/data`. Then run `./scripts/train-cloud.sh` after adjusting hyperparameters, or submit a hyperparameter job. 
+
+## Docker Image
+To update the Docker image, ensure you have  `docker` and `gsutils` installed. Then run `./scripts/upload-image.sh`. You should not need to do this unless you need to add extra dependencies, or if you want to avoid installing GPU dependencies if you are running the model on GPU. To avoid uploading to Google Cloud, comment out `docker push`.
+
+## GCP Todos
+- Add suppport for hyperparameter tuning
+- Add support for GPU jobs
