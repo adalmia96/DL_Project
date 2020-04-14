@@ -36,6 +36,5 @@ echo "Downloading train and test data"
 gsutil cp $TRAIN_FILE_URI ./data/${train_file}
 gsutil cp $TEST_FILE_URI ./data/${test_file}
 
-echo $args
 python -u ./main.py ${@}
 gsutil cp ./output/model $MODEL_URI

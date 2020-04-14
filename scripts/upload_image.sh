@@ -6,7 +6,7 @@ cd $DIR/..
 # PROJECT_ID: id of project
 PROJECT_ID=$(gcloud config list project --format "value(core.project)")
 
-IMAGE_TAG=cpu
+IMAGE_TAG=latest
 
 # IMAGE_REPO_NAME: the image will be stored on Cloud Container Registry
 IMAGE_REPO_NAME=pytorch_dl_project

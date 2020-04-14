@@ -40,7 +40,6 @@ def get_args():
 def main():
     """Setup"""
     args = get_args()
-    print(args)
     x_train = np.genfromtxt('data/'+args.train_file, delimiter=" ")
     x_test = np.genfromtxt('data/'+args.test_file, delimiter=" ")
     train_loader = DataLoader(dataset=x_train, batch_size=args.batch_size)
