@@ -8,7 +8,7 @@ PROJECT_ID=$(gcloud config list project --format "value(core.project)")
 #BUCKET_ID: id of storage bucket for model
 BUCKET_ID=dl-final-project
 
-IMAGE_TAG=cpu
+IMAGE_TAG=latest
 
 # IMAGE_REPO_NAME: the image will be stored on Cloud Container Registry
 #IMAGE_REPO_NAME=mnist_pytorch_custom_container
