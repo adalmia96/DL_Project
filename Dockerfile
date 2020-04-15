@@ -1,7 +1,7 @@
 # Dockerfile
 
 # Install pytorch
-FROM gcr.io/deeplearning-platform-release/pytorch-gpu.1-4
+FROM gcr.io/deeplearning-platform-release/pytorch-gpu.1-3
 # OR
 # FROM pytorch/pytorch:1.0.1-cuda10.0-cudnn7-runtime
 

@@ -41,7 +41,7 @@ GENER_ITERS = 1
 # Number of GPUs
 N_GPUS = 1
 # Batch size. Must be a multiple of N_GPUS
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 # How many iterations to train for
 END_ITER = 10000
 # Gradient penalty lambda hyperparameter
