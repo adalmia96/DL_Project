@@ -56,6 +56,3 @@ def main():
     else:
         print("Invalid model!")
     return
-
-if __name__ == "__main__":
-    main()
