@@ -1,4 +1,5 @@
 #Doesn't include pytorch
+torchvision
 Pillow
 argparse
 numpy

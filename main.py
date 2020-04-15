@@ -40,17 +40,17 @@ def get_args():
 def main():
     """Setup"""
     args = get_args()
-    x_train = np.genfromtxt('data/'+args.train_file, delimiter=" ")
-    train_loader = DataLoader(dataset=x_train, batch_size=args.batch_size)
+    #x_train = np.genfromtxt('data/'+args.train_file, delimiter=" ")
+    #train_loader = DataLoader(dataset=x_train, batch_size=args.batch_size)
 
     if args.model == 'wgan2d':
+        print("Going into wgan2d")
         import models.wgantwod
-        models.wgan2d.train()
-        #models.wgan2d.test()
-    elif args.model == 'fake':
-        import models.fake
-        models.fake.train(train_loader, epochs=args.train_epochs)
-        models.fake.test()
+        models.wgantwod.train()
+        #models.wgantwod.test()
     else:
         print("Invalid model!")
     return
+
+if __name__ == "__main__":
+    main()

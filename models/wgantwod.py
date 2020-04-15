@@ -8,7 +8,7 @@ import argparse
 import numpy as np
 #import sklearn.datasets
 
-from models.wgan import *
+#from models.wgan import *
 
 import torch
 import torchvision
@@ -31,7 +31,7 @@ RESTORE_MODE = False
 # Starting iteration
 START_ITER = 0
 # Output path where result will be stored
-OUTPUT_PATH = './out/'
+OUTPUT_PATH = './output/'
 # Model dimensionality
 DIM = 50
 # How many iterations to train the critic for
@@ -69,7 +69,8 @@ def weights_init(m):
 def loader_funct(fp):
     with open(fp, 'rb') as f:
         return pickle.load(f)
-training_dataset = datasets.DatasetFolder(root=DATA_DIR, loader=loader_funct, extensions=["pickle"],
+
+training_dataset = datasets.DatasetFolder(root=DATA_DIR, loader=loader_funct, extensions=".pickle",
                                              transform=transforms.Compose([
                                                 torch.from_numpy])
                                                 #, torch.tanh])
@@ -351,14 +352,14 @@ aD = aD.to(device)
 one = one.to(device)
 mone = mone.to(device)
 
-writer = SummaryWriter()
+#writer = SummaryWriter()
 def train():
+    print("Training!")
     dataloader = training_data_loader
     dataiter = iter(dataloader)
     for iteration in range(START_ITER, END_ITER):
         start_time = time.time()
         print("Iter: " + str(iteration))
-        start = timer()
         #---------------------TRAIN G------------------------
         for p in aD.parameters():
             p.requires_grad_(False)  # freeze D
@@ -377,8 +378,6 @@ def train():
             gen_cost = -gen_cost
 
         optimizer_g.step()
-        end = timer()
-        print(f'---train G elapsed time: {end - start}')
         #---------------------TRAIN D------------------------
         for p in aD.parameters():  # reset requires_grad
             p.requires_grad_(True)  # they are set to False below in training G
@@ -392,16 +391,12 @@ def train():
             with torch.no_grad():
                 noisev = noise  # totally freeze G, training D
             fake_data = aG(noisev).detach()
-            end = timer(); print(f'---gen G elapsed time: {end-start}')
-            start = timer()
             batch = next(dataiter, None)
             if batch is None:
                 dataiter = iter(dataloader)
                 batch = dataiter.next()
             batch = batch[0] #batch[1] contains labels
             real_data = batch.to(device) #TODO: modify load_data for each loading
-            end = timer(); print(f'---load real imgs elapsed time: {end-start}')
-            start = timer()
 
             # train with real data
             disc_real = aD(real_data)
@@ -425,7 +420,7 @@ def train():
 
         #---------------VISUALIZATION---------------------
         if iteration % 100 == 99:
-                        gen_images = generate_image(aG, fixed_noise)
+            gen_images = generate_image(aG, fixed_noise)
             sentences = ""
             for gen_image in gen_images:
                 b = gen_image.detach().cpu().numpy()
@@ -434,6 +429,7 @@ def train():
                 f.write(sentences)
             #writer.add_text('sentences', sentences, iteration)
 	#----------------------Save model----------------------
+            print("Saving models!")
             torch.save(aG, OUTPUT_PATH + "generator.pt")
             torch.save(aD, OUTPUT_PATH + "discriminator.pt")
 

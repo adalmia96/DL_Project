@@ -34,7 +34,7 @@ MODEL=wgan2d
 gcloud beta ai-platform jobs submit training ${JOB_NAME} \
 	--region ${REGION} \
 	--master-image-uri ${IMAGE_URI} \
-	--scale-tier BASIC \
+	--scale-tier BASIC_GPU \
 	-- \
 	--train-file ${TRAIN_FILE} \
 	--we-file ${WE_FILE} \
