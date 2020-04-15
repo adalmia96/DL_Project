@@ -41,5 +41,5 @@ pip install -r requirements.txt
 echo -e "import nltk\nnltk.download('punkt')" | python
 
 python ./preprocessing.py
-python -u ./main.py ${@}
+python ./main.py ${@}
 gsutil cp ./output/* $MODEL_URI

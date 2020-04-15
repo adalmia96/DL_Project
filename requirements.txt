@@ -1,4 +1,5 @@
 #Doesn't include pytorch
+Pillow
 argparse
 numpy
 preprocessing
