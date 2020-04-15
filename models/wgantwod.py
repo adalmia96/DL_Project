@@ -10,6 +10,8 @@ import numpy as np
 
 from models.wgan import *
 
+#Mary's test
+
 import torch
 import torchvision
 from torch import nn
