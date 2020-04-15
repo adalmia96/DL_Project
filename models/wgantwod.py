@@ -3,7 +3,7 @@ sys.path.append(os.getcwd())
 
 import time
 import functools
-import argparse
+#import argparse
 
 import numpy as np
 #import sklearn.datasets
@@ -17,52 +17,54 @@ from torch import autograd
 from torch import optim
 from torchvision import transforms, datasets
 from torch.autograd import grad
-
-import torch.nn.init as init
-
+#import torch.nn.init as init
 import pickle
-
 import preprocessing as pp
+import nltk
 
-DATA_DIR = './cache/training/' # Replace your training data path here
-
-# if True, it will load saved model from OUT_PATH and continue to train
-RESTORE_MODE = False
-# Starting iteration
-START_ITER = 0
+# Replace your training data path here
+DATA_DIR = './cache/training/'
 # Output path where result will be stored
 OUTPUT_PATH = './output/'
+
+# if True, it will load saved model from OUT_PATH and continue to train
+#RESTORE_MODE = False
+# Starting iteration
+#START_ITER = 0
 # Model dimensionality
-DIM = 50
+#DIM = 50
 # How many iterations to train the critic for
-CRITIC_ITERS = 5
+#CRITIC_ITERS = 2
 # How many iterations to train the generator for
-GENER_ITERS = 1
+#GENER_ITERS = 1
 # Number of GPUs
-N_GPUS = 1
+#N_GPUS = 1
 # Batch size. Must be a multiple of N_GPUS
-BATCH_SIZE = 64
+#BATCH_SIZE = 64
 # How many iterations to train for
-END_ITER = 10000
+#END_ITER = 2
 # Gradient penalty lambda hyperparameter
-LAMBDA = 10
+#LAMBDA = 10
 # Number of pixels in each word matrix (word vector length * sequence length)
-OUTPUT_DIM = 50*50*1
+#OUTPUT_DIM = 50*50*1
+
+cuda_available = torch.cuda.is_available()
+device = torch.device("cuda" if cuda_available else "cpu")
 
 def weights_init(m):
     if isinstance(m, MyConvo2d):
         if m.conv.weight is not None:
             if m.he_init:
-                init.kaiming_uniform_(m.conv.weight)
+                nn.init.kaiming_uniform_(m.conv.weight)
             else:
-                init.xavier_uniform_(m.conv.weight)
+                nn.init.xavier_uniform_(m.conv.weight)
         if m.conv.bias is not None:
-            init.constant_(m.conv.bias, 0.0)
+            nn.init.constant_(m.conv.bias, 0.0)
     if isinstance(m, nn.Linear):
         if m.weight is not None:
-            init.xavier_uniform_(m.weight)
+            nn.init.xavier_uniform_(m.weight)
         if m.bias is not None:
-            init.constant_(m.bias, 0.0)
+            nn.init.constant_(m.bias, 0.0)
 
 
 # Create the dataset
@@ -70,23 +72,14 @@ def loader_funct(fp):
     with open(fp, 'rb') as f:
         return pickle.load(f)
 
-training_dataset = datasets.DatasetFolder(root=DATA_DIR, loader=loader_funct, extensions=".pickle",
-                                             transform=transforms.Compose([
-                                                torch.from_numpy])
-                                                #, torch.tanh])
-                                            )
 
-# Create the dataloader
-training_data_loader = torch.utils.data.DataLoader(training_dataset, batch_size=BATCH_SIZE,
-                                         shuffle=True, num_workers=0, drop_last=True)
-
-def calc_gradient_penalty(netD, real_data, fake_data):
-    alpha = torch.rand(BATCH_SIZE, 1)
-    alpha = alpha.expand(BATCH_SIZE, int(real_data.nelement()/BATCH_SIZE)).contiguous()
-    alpha = alpha.view(BATCH_SIZE, 1, DIM, DIM)
+def calc_gradient_penalty(netD, real_data, fake_data, lambda_term, dim, batch_size):
+    alpha = torch.rand(batch_size, 1)
+    alpha = alpha.expand(batch_size, int(real_data.nelement()/batch_size)).contiguous()
+    alpha = alpha.view(batch_size, 1, dim, dim)
     alpha = alpha.to(device)
 
-    fake_data = fake_data.view(BATCH_SIZE, 1, DIM, DIM)
+    fake_data = fake_data.view(batch_size, 1, dim, dim)
     interpolates = alpha * real_data.detach() + ((1 - alpha) * fake_data.detach())
 
     interpolates = interpolates.to(device)
@@ -99,26 +92,25 @@ def calc_gradient_penalty(netD, real_data, fake_data):
                               create_graph=True, retain_graph=True, only_inputs=True)[0]
 
     gradients = gradients.view(gradients.size(0), -1)
-    gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * LAMBDA
+    gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * lambda_term
     return gradient_penalty
 
-def generate_image(netG, noise=None):
+def generate_image(netG, batch_size, noise=None):
     if noise is None:
-        noise = gen_rand_noise()
+        noise = gen_rand_noise(batch_size)
 
     with torch.no_grad():
     	noisev = noise
     samples = netG(noisev)
-    samples = samples.view(BATCH_SIZE, 1, 50, 50)
+    samples = samples.view(batch_size, 1, 50, 50)
     #samples = samples * 0.5 + 0.5
     return samples
 
-def gen_rand_noise():
-    noise = torch.randn(BATCH_SIZE, 128)
+def gen_rand_noise(batch_size):
+    noise = torch.randn(batch_size, 128)
     noise = noise.to(device)
 
     return noise
-
 
 
 class MyConvo2d(nn.Module):
@@ -191,7 +183,7 @@ class UpSampleConv(nn.Module):
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, input_dim, output_dim, kernel_size, resample=None, hw=DIM):
+    def __init__(self, input_dim, output_dim, kernel_size, hw, resample=None):
         super(ResidualBlock, self).__init__()
 
         self.input_dim = input_dim
@@ -260,16 +252,17 @@ class ReLULayer(nn.Module):
         return output
 
 class Generator(nn.Module):
-    def __init__(self, dim=DIM,output_dim=OUTPUT_DIM):
+    def __init__(self, dim, output_dim):
         super(Generator, self).__init__()
 
         self.dim = dim
+        self.output_dim =output_dim
 
         self.ln1 = nn.Linear(128, 3*3*8*self.dim)
-        self.rb1 = ResidualBlock(8*self.dim, 8*self.dim, 3, resample = 'up')
-        self.rb2 = ResidualBlock(8*self.dim, 4*self.dim, 3, resample = 'up')
-        self.rb3 = ResidualBlock(4*self.dim, 2*self.dim, 3, resample = 'up')
-        self.rb4 = ResidualBlock(2*self.dim, 1*self.dim, 3, resample = 'up')
+        self.rb1 = ResidualBlock(8*self.dim, 8*self.dim, 3, hw=self.dim, resample = 'up')
+        self.rb2 = ResidualBlock(8*self.dim, 4*self.dim, 3, hw=self.dim, resample = 'up')
+        self.rb3 = ResidualBlock(4*self.dim, 2*self.dim, 3, hw=self.dim, resample = 'up')
+        self.rb4 = ResidualBlock(2*self.dim, 1*self.dim, 3, hw=self.dim, resample = 'up')
         self.conv_sp = nn.ConvTranspose2d(1*self.dim, 1*self.dim, 3, stride=1, padding=0, bias = False) #added
         self.bn  = nn.BatchNorm2d(self.dim)
 
@@ -290,11 +283,11 @@ class Generator(nn.Module):
         output = self.relu(output)
         output = self.conv1(output)
         #output = self.tanh(output)
-        output = output.view(-1, OUTPUT_DIM)
+        output = output.view(-1, self.output_dim)
         return output
 
 class Discriminator(nn.Module):
-    def __init__(self, dim=DIM):
+    def __init__(self, dim):
         super(Discriminator, self).__init__()
 
         self.dim = dim
@@ -311,7 +304,7 @@ class Discriminator(nn.Module):
 
     def forward(self, input):
         output = input.contiguous()
-        output = output.view(-1, 1, DIM, DIM)
+        output = output.view(-1, 1, self.dim, self.dim)
         output = self.tanh(output) #added
         output = self.conv1(output)
         output = self.conv_sp(output) #added
@@ -325,39 +318,47 @@ class Discriminator(nn.Module):
         output = output.view(-1)
         return output
 
+def train(batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=0.0001, wv_length=50, seq_length=50, \
+    restore=False, dimensionality=50):
 
-
-cuda_available = torch.cuda.is_available()
-device = torch.device("cuda" if cuda_available else "cpu")
-fixed_noise = gen_rand_noise()
-
-if RESTORE_MODE:
-    aG = torch.load(OUTPUT_PATH + "generator.pt")
-    aD = torch.load(OUTPUT_PATH + "discriminator.pt")
-else:
-    aG = Generator(50,50*50*1)
-    aD = Discriminator(50)
-
-    aG.apply(weights_init)
-    aD.apply(weights_init)
-
-
-LR = 0.0001
-optimizer_g = torch.optim.Adam(aG.parameters(), lr=LR, betas=(0,0.9))
-optimizer_d = torch.optim.Adam(aD.parameters(), lr=LR, betas=(0,0.9))
-one = torch.tensor(1.0)
-mone = one * -1
-aG = aG.to(device)
-aD = aD.to(device)
-one = one.to(device)
-mone = mone.to(device)
-
-#writer = SummaryWriter()
-def train():
     print("Training!")
+    #---------------------Initialize Stuff------------------------
+    training_dataset = datasets.DatasetFolder(root=DATA_DIR, loader=loader_funct, extensions=".pickle",
+                                                 transform=transforms.Compose([
+                                                    torch.from_numpy])
+                                                )
+    # Create the dataloader
+    training_data_loader = torch.utils.data.DataLoader(training_dataset, batch_size=batch_size,
+                                             shuffle=True, num_workers=0, drop_last=True)
+
+    output_dim = wv_length*seq_length*1
+    if restore:
+        aG = torch.load(OUTPUT_PATH + "generator.pt")
+        aD = torch.load(OUTPUT_PATH + "discriminator.pt")
+    else:
+        # TODO change these to variables
+        aG = Generator(dimensionality, output_dim)
+        aD = Discriminator(dimensionality)
+
+        aG.apply(weights_init)
+        aD.apply(weights_init)
+
+
+    optimizer_g = torch.optim.Adam(aG.parameters(), lr=lr, betas=(0,0.9))
+    optimizer_d = torch.optim.Adam(aD.parameters(), lr=lr, betas=(0,0.9))
+    one = torch.tensor(1.0)
+    mone = one * -1
+    aG = aG.to(device)
+    aD = aD.to(device)
+    one = one.to(device)
+    mone = mone.to(device)
+
+    fixed_noise = gen_rand_noise(batch_size)
+
+    #---------------------Start Actual Training------------------------
     dataloader = training_data_loader
     dataiter = iter(dataloader)
-    for iteration in range(START_ITER, END_ITER):
+    for iteration in range(epochs):
         start_time = time.time()
         print("Iter: " + str(iteration))
         #---------------------TRAIN G------------------------
@@ -365,10 +366,10 @@ def train():
             p.requires_grad_(False)  # freeze D
 
         gen_cost = None
-        for i in range(GENER_ITERS):
+        for i in range(g_iters):
             print("Generator iters: " + str(i))
             aG.zero_grad()
-            noise = gen_rand_noise()
+            noise = gen_rand_noise(batch_size)
             noise.requires_grad_(True)
             fake_data = aG(noise)
             gen_cost = aD(fake_data)
@@ -381,13 +382,13 @@ def train():
         #---------------------TRAIN D------------------------
         for p in aD.parameters():  # reset requires_grad
             p.requires_grad_(True)  # they are set to False below in training G
-        for i in range(CRITIC_ITERS):
+        for i in range(d_iters):
             print("Critic iter: " + str(i))
 
             aD.zero_grad()
 
             # gen fake data and load real data
-            noise = gen_rand_noise()
+            noise = gen_rand_noise(batch_size)
             with torch.no_grad():
                 noisev = noise  # totally freeze G, training D
             fake_data = aG(noisev).detach()
@@ -408,7 +409,7 @@ def train():
 
             #showMemoryUsage(0)
             # train with interpolates data
-            gradient_penalty = calc_gradient_penalty(aD, real_data, fake_data)
+            gradient_penalty = calc_gradient_penalty(aD, real_data, fake_data, lambda_term, dimensionality, batch_size)
             #showMemoryUsage(0)
 
             # final disc cost
@@ -419,8 +420,9 @@ def train():
 
 
         #---------------VISUALIZATION---------------------
+        #if True:
         if iteration % 100 == 99:
-            gen_images = generate_image(aG, fixed_noise)
+            gen_images = generate_image(aG, batch_size, fixed_noise)
             sentences = ""
             for gen_image in gen_images:
                 b = gen_image.detach().cpu().numpy()
@@ -433,12 +435,12 @@ def train():
             torch.save(aG, OUTPUT_PATH + "generator.pt")
             torch.save(aD, OUTPUT_PATH + "discriminator.pt")
 
-import nltk
 
-def test():
+def test(num_images=64):
+    aG = torch.load(OUTPUT_PATH + "generator.pt")
     sentences = []
     for i in range(2):
-        gen_images = generate_image(aG)
+        gen_images = generate_image(aG, num_images)
         for gen_image in gen_images:
             b = gen_image.detach().cpu().numpy()
             decode = pp.decode_word_array3(b)
@@ -453,4 +455,4 @@ def test():
             bss.append(nltk.translate.bleu_score.sentence_bleu([t2], t))
         print(np.average(bss))
         bsss.append(np.average(bss))
-    print("Final", np.average(bsss))
+    #print("Final", np.average(bsss))

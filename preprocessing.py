@@ -1,4 +1,6 @@
 import nltk
+nltk.download('punkt')
+
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from PIL import Image
@@ -15,7 +17,9 @@ glove_data = "data/glove.6B.50d.w2v.txt"
 # Location of training data
 training_data = "data/news.2009.en.shuffled"
 # Desired data set sizes
-num_data = 250000
+num_data = 100
+
+DATA_DIR = './data'
 
 global glove_model
 glove_model = KeyedVectors.load_word2vec_format(glove_data, binary=False)
