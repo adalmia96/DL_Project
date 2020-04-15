@@ -27,7 +27,7 @@ import preprocessing as pp
 DATA_DIR = './cache/training/' # Replace your training data path here
 
 # if True, it will load saved model from OUT_PATH and continue to train
-RESTORE_MODE = True
+RESTORE_MODE = False
 # Starting iteration
 START_ITER = 0
 # Output path where result will be stored
