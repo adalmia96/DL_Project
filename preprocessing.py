@@ -1,11 +1,9 @@
-import nltk
-nltk.download('punkt')
-
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from PIL import Image
 import pickle
 import matplotlib.pyplot as plt
+import nltk
 
 # Maximum allowed tokens in a sentence
 # Or only allowed size
@@ -126,4 +124,5 @@ def preprocess():
 
 # Main
 if __name__ == "__main__":
+    print("DEPRECATED: Please use main.py --mode preprocessing instead")
     preprocess()

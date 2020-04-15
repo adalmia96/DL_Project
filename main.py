@@ -2,6 +2,7 @@ import argparse
 import torch
 from torch.utils.data import DataLoader
 import numpy as np
+import preprocessing as pp
 
 def get_args():
     """Get arguments from command line."""
@@ -26,7 +27,7 @@ def get_args():
         default='wgantwod')
     args_parser.add_argument(
         '--mode',
-        help='Either train or test.',
+        help='Either preprocess, train, or test.',
         type=str,
         default='test')
     args_parser.add_argument(
@@ -102,6 +103,10 @@ def main():
     
     print("Running main.py with these parameters: ")
     print(args)
+
+    if (args.mode == "preprocess"):
+        pp.preprocess()
+        return
 
     if args.model == 'wgantwod':
         import models.wgantwod

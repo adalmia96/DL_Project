@@ -7,6 +7,7 @@ Install pytorch and python3. Run the following code for the model. This assumes 
 ```
 python main.py --train-file example.train --we-file example_embeddings --model wgantwod --mode train --train-epochs 5
 ```
+Alternatively, modify and run `./scripts/run.sh [preprocess | train | test]`.
 Output is saved to the `output` folder.
 
 ## Further Setup for GCP

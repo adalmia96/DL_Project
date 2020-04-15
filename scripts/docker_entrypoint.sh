@@ -38,8 +38,8 @@ gsutil cp $WE_FILE_URI ./data/${we_file}
 
 # Install packages if needed, should be done
 pip install -r requirements.txt
-#echo -e "import nltk\nnltk.download('punkt')" | python
+echo -e "import nltk\nnltk.download('punkt')" | python
 
-python ./preprocessing.py
-python ./main.py ${@}
+python ./main.py --mode preprocess
+python ./main.py --mode train ${@}
 gsutil cp -r ./output/ $MODEL_URI
