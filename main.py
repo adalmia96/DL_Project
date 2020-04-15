@@ -18,7 +18,7 @@ def get_args():
         help='Name of word embeddings file. If using Docker/GCS script, must use exact name stored under GCS bucket.',
         #nargs='+',
         required=True)
-     Experiment arguments
+    # Experiment arguments
     args_parser.add_argument(
         '--model',
         help='Model to experiment with.',

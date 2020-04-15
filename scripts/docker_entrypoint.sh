@@ -38,6 +38,7 @@ gsutil cp $WE_FILE_URI ./data/${we_file}
 
 # Install packages if needed, should be done
 pip install -r requirements.txt
+echo -e "import nltk\nnltk.download('punkt')" | python
 
 python ./preprocessing.py
 python -u ./main.py ${@}
