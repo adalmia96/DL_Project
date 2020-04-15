@@ -42,4 +42,4 @@ echo -e "import nltk\nnltk.download('punkt')" | python
 
 python ./preprocessing.py
 python ./main.py ${@}
-gsutil cp ./output/* $MODEL_URI
+gsutil cp -r ./output/ $MODEL_URI

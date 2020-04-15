@@ -22,7 +22,7 @@ JOB_NAME=gans_training_job_$(date +%Y%m%d_%H%M%S)
 
 # REGION: select a region from https://cloud.google.com/ml-engine/docs/regions
 # or use the default '`us-central1`'. The region is where the model will be deployed.
-REGION=us-central1
+REGION=us-west1
 
 # These variables are passed to the docker image
 #JOB_DIR=gs://${BUCKET_ID}/models
