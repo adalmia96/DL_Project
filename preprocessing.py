@@ -11,9 +11,9 @@ word_array_size = 50
 # Word vector length, we are using glove vectors which have 50 elements
 word_vector_size = 50
 # Location of glove vectors
-glove_data = "./raw/glove.6B.50d.w2v.txt"
+glove_data = "data/glove.6B.50d.w2v.txt"
 # Location of training data
-training_data = "./raw/news.2009.en.shuffled.unique"
+training_data = "data/news.2009.en.shuffled"
 # Desired data set sizes
 num_data = 250000
 
