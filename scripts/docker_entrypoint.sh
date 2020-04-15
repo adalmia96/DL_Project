@@ -13,28 +13,32 @@ do
     if [[ "${args[i]}" == "--train-file" ]]
     then
         train_file=("${args[i+1]}")
-    elif [[ "${args[i]}" == "--test-file" ]]
+    elif [[ "${args[i]}" == "--we-file" ]]
     then
-        test_file=("${args[i+1]}")
+        we_file=("${args[i+1]}")
     fi
 done
 
-if [ -z "$train_file" ] || [ -z "$test_file" ]
+if [ -z "$train_file" ] || [ -z "$we_file" ]
 then
-    echo "Must specify train and test files!"
+    echo "Must specify train and word embedding files!"
     exit 1
 fi
 
 BUCKET_NAME=dl-final-project
 
 TRAIN_FILE_URI=gs://$BUCKET_NAME/data/$train_file
-TEST_FILE_URI=gs://$BUCKET_NAME/data/$test_file
+WE_FILE_URI=gs://$BUCKET_NAME/data/$we_file
 TIMESTAMP=$(date +%s)
-MODEL_URI=gs://$BUCKET_NAME/models/model_${TIMESTAMP}
+MODEL_URI=gs://$BUCKET_NAME/models/iter_${TIMESTAMP}/
 
-echo "Downloading train and test data"
+echo "Downloading train and word embeddings data"
 gsutil cp $TRAIN_FILE_URI ./data/${train_file}
-gsutil cp $TEST_FILE_URI ./data/${test_file}
+gsutil cp $WE_FILE_URI ./data/${we_file}
 
+# Install packages if needed, should be done
+pip install -r requirements.txt
+
+python ./preprocessing.py
 python -u ./main.py ${@}
-gsutil cp ./output/model $MODEL_URI
+gsutil cp ./output/* $MODEL_URI

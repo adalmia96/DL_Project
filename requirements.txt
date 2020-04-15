@@ -1,0 +1,7 @@
+#Doesn't include pytorch
+argparse
+numpy
+preprocessing
+nltk
+gensim
+matplotlib

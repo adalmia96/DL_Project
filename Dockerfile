@@ -9,6 +9,10 @@ WORKDIR /root
 
 RUN pip install cloudml-hypertune
 
+# May not be up to date, but reduces downloading later
+COPY requirements.txt /root/requirements.txt
+RUN pip install -r requirements.txt
+
 COPY scripts/docker_entrypoint.sh /root/docker_entrypoint.sh
 
 # Sets up the entry point to invoke the trainer.

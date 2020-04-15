@@ -19,13 +19,13 @@ def train(loader, epochs):
             print(model.forward(item))
     torch.save(model.state_dict(), 'output/model')
 
-def test(loader):
+def test():
     """Testing"""
     print("Testing")
-    model = FakeModel()
-    model.load_state_dict(torch.load('output/model'))
-    model.eval()
-    with torch.no_grad():
-        for item in loader:
-            print(model.forward(item))
+    #model = FakeModel()
+    #model.load_state_dict(torch.load('output/model'))
+    #model.eval()
+    #with torch.no_grad():
+    #    for item in loader:
+    #        print(model.forward(item))
 

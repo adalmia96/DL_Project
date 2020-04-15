@@ -27,16 +27,17 @@ REGION=us-central1
 # These variables are passed to the docker image
 #JOB_DIR=gs://${BUCKET_ID}/models
 # Note: these files have already been copied over when the image was built
-TRAIN_FILE=fake.train
-TEST_FILE=fake.dev
-MODEL=fake
+TRAIN_FILE=news.2009.en.shuffled
+WE_FILE=glove.6B.50d.w2v.txt
+MODEL=wgan2d
+
 gcloud beta ai-platform jobs submit training ${JOB_NAME} \
 	--region ${REGION} \
 	--master-image-uri ${IMAGE_URI} \
 	--scale-tier BASIC \
 	-- \
 	--train-file ${TRAIN_FILE} \
-	--test-file ${TEST_FILE} \
+	--we-file ${WE_FILE} \
 	--model ${MODEL} \
 	--train-epochs=10 \
 	--batch-size=100 #\

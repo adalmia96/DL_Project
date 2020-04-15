@@ -14,11 +14,11 @@ def get_args():
         #nargs='+',
         required=True)
     args_parser.add_argument(
-        '--test-file',
-        help='Name of dev file. If using Docker/GCS script, must use exact name stored under GCS bucket.',
+        '--we-file',
+        help='Name of word embeddings file. If using Docker/GCS script, must use exact name stored under GCS bucket.',
         #nargs='+',
         required=True)
-    # Experiment arguments
+     Experiment arguments
     args_parser.add_argument(
         '--model',
         help='Model to experiment with.',
@@ -41,18 +41,16 @@ def main():
     """Setup"""
     args = get_args()
     x_train = np.genfromtxt('data/'+args.train_file, delimiter=" ")
-    x_test = np.genfromtxt('data/'+args.test_file, delimiter=" ")
     train_loader = DataLoader(dataset=x_train, batch_size=args.batch_size)
-    test_loader = DataLoader(dataset=x_test, batch_size=args.batch_size)
 
     if args.model == 'wgan2d':
         import models.wgantwod
         models.wgan2d.train()
-        models.wgan2d.test()
+        #models.wgan2d.test()
     elif args.model == 'fake':
         import models.fake
         models.fake.train(train_loader, epochs=args.train_epochs)
-        models.fake.test(test_loader)
+        models.fake.test()
     else:
         print("Invalid model!")
     return
