@@ -22,7 +22,6 @@ import pickle
 import preprocessing as pp
 import nltk
 from pytorch_pretrained_bert import BertTokenizer,BertForMaskedLM
-import pandas as pd
 import math
 
 # Replace your training data path here
