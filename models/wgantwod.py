@@ -438,7 +438,7 @@ def train(batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=
             torch.save(aG, OUTPUT_PATH + "generator.pt")
             torch.save(aD, OUTPUT_PATH + "discriminator.pt")
 
-def get_bert_score(sentence):
+def get_bert_score(sentence, tokenizer):
         tokenize_input = tokenizer.tokenize(sentence)
         tensor_input = torch.tensor([tokenizer.convert_tokens_to_ids(tokenize_input)])
         predictions=bertMaskedLM(tensor_input)
@@ -474,4 +474,4 @@ def test(num_images=64):
     bertMaskedLM.eval()
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
-    print("Average BERT Perplexity", sum([get_bert_score(s) for s in sentences]) / len(sentences))
+    print("Average BERT Perplexity", sum([get_bert_score(s, tokenizer) for s in sentences]) / len(sentences))
