@@ -21,6 +21,9 @@ from torch.autograd import grad
 import pickle
 import preprocessing as pp
 import nltk
+from pytorch_pretrained_bert import BertTokenizer,BertForMaskedLM
+import pandas as pd
+import math
 
 # Replace your training data path here
 DATA_DIR = './cache/training/'
@@ -435,6 +438,13 @@ def train(batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=
             torch.save(aG, OUTPUT_PATH + "generator.pt")
             torch.save(aD, OUTPUT_PATH + "discriminator.pt")
 
+def get_bert_score(sentence):
+        tokenize_input = tokenizer.tokenize(sentence)
+        tensor_input = torch.tensor([tokenizer.convert_tokens_to_ids(tokenize_input)])
+        predictions=bertMaskedLM(tensor_input)
+        loss_fct = torch.nn.CrossEntropyLoss()
+        loss = loss_fct(predictions.squeeze(),tensor_input.squeeze()).data 
+        return math.exp(loss)
 
 def test(num_images=64):
     aG = torch.load(OUTPUT_PATH + "generator.pt")
@@ -455,4 +465,13 @@ def test(num_images=64):
             bss.append(nltk.translate.bleu_score.sentence_bleu([t2], t))
         print(np.average(bss))
         bsss.append(np.average(bss))
-    #print("Final", np.average(bsss))
+    print("Average BLEU Score", np.average(bsss))
+
+    # BERT perplexity 
+    bertMaskedLM = BertForMaskedLM.from_pretrained('bert-base-uncased')
+
+    # make results deterministic
+    bertMaskedLM.eval()
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+    print("Average BERT Perplexity", sum([get_bert_score(s) for s in sentences]) / len(sentences))
