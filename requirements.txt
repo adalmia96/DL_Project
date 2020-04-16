@@ -6,3 +6,4 @@ numpy
 nltk
 gensim
 matplotlib
+pytorch_pretrained_bert
