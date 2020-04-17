@@ -32,14 +32,13 @@ MODEL=wgantwod
 
 gcloud beta ai-platform jobs submit training ${JOB_NAME} \
 	--master-image-uri ${IMAGE_URI} \
-	--scale-tier CUSTOM \
-	--config ../config.yaml
+	--config config.yaml \
 	-- \
 	--train-file ${TRAIN_FILE} \
 	--we-file ${WE_FILE} \
 	--model ${MODEL} \
-	--train-epochs=10 \
-	--batch-size=100
+	--train-epochs=1 \
+	--batch-size=64
 
 echo "You may type Ctrl-C if you wish to view the logs online instead."
 # Stream the logs from the job
