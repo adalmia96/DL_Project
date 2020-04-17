@@ -1,5 +1,5 @@
 import numpy as np
-from gensim.models.keyedvectors import KeyedVectors
+#from gensim.models.keyedvectors import KeyedVectors
 from PIL import Image
 import pickle
 import matplotlib.pyplot as plt
@@ -7,23 +7,24 @@ import nltk
 
 # Maximum allowed tokens in a sentence
 # Or only allowed size
-word_array_size = 50
+#word_array_size = 50
 # Word vector length, we are using glove vectors which have 50 elements
-word_vector_size = 50
+#word_vector_size = 50
 # Location of glove vectors
-glove_data = "data/glove.6B.50d.w2v.txt"
+#glove_data = "data/glove.6B.50d.w2v.txt"
 # Location of training data
-training_data = "data/news.2009.en.shuffled"
+#training_data = "data/news.2009.en.shuffled"
 # Desired data set sizes
-num_data = 100
+#num_data = 100
 
-DATA_DIR = './data'
+#DATA_DIR = './data'
 
-global glove_model
-glove_model = KeyedVectors.load_word2vec_format(glove_data, binary=False)
+# Changed all glove_model instances to we_model
+#global glove_model
+#glove_model = KeyedVectors.load_word2vec_format(glove_data, binary=False)
 
 # Take in a string, output a 1x50x50 numpy "word array"
-def make_word_array(s):
+def make_word_array(s, we_model, word_array_size=50, word_vector_size=50):
     tokens = nltk.word_tokenize(s)
     tokens = [token.lower() for token in tokens]
     sent_length = len(tokens)
@@ -32,7 +33,7 @@ def make_word_array(s):
     else:
         word_array = []
         for token in tokens:
-            nums = glove_model[token]
+            nums = we_model[token]
             list_nums = nums.tolist()
             word_array.append(list_nums)
         word_array.extend([[0] * word_vector_size] * (word_array_size - len(word_array)))
@@ -40,10 +41,10 @@ def make_word_array(s):
         return a[np.newaxis, :], sent_length
 
 # Take in a numpy array, output a string
-def decode_word_array(a):
+def decode_word_array(a, we_model):
     sentence = []
     for vector in a[0]:
-        foo = glove_model.similar_by_vector(vector, topn=1)
+        foo = we_model.similar_by_vector(vector, topn=1)
         bar = foo[0][1]
         # Don't decode anything with less than 0.25 magnitude (assumed to be 0-vector and padding)
         if np.linalg.norm(vector) > 0.25:
@@ -53,10 +54,10 @@ def decode_word_array(a):
     return " ".join(sentence)
 
 # Output a list of tokens
-def decode_word_array3(a):
+def decode_word_array3(a, we_model):
     sentence = []
     for vector in a[0]:
-        foo = glove_model.similar_by_vector(vector, topn=1)
+        foo = we_model.similar_by_vector(vector, topn=1)
         bar = foo[0][1]
         # Don't decode anything with less than 0.25 magnitude (assumed to be 0-vector and padding)
         if np.linalg.norm(vector) > 0.25:
@@ -68,10 +69,10 @@ def decode_word_array3(a):
 
 # Output list of strings and cosine distances
 # Used for diagnosis
-def decode_word_array2(a):
+def decode_word_array2(a, we_model):
     sentence = []
     for vector in a[0]:
-        foo = glove_model.similar_by_vector(vector, topn=1)
+        foo = we_model.similar_by_vector(vector, topn=1)
         bar = foo[0]
         # don't decode anything with less than 0.25 magnitude (assumed to be 0-vector and padding)
         if np.linalg.norm(vector) > 0.25:
@@ -90,15 +91,15 @@ def word_array_magnitudes(a):
 
 # Creates an image out of the word array
 # Used for the thesis paper
-def create_fancy_image(s):
-    array, _ = make_word_array(s)
+def create_fancy_image(s, we_model, word_array_size=50, word_vector_size=50):
+    array, _ = make_word_array(s, we_model, word_array_size, word_vector_size)
     array = array[0]
     scaled = (255*(array - np.min(array))/np.ptp(array)).astype('uint8')
     img = Image.fromarray(scaled)
     img = img.rotate(90).resize((400, 400))
-    img.save('./out/image.png', 'png')
+    img.save('./output/image.png', 'png')
 
-def preprocess():
+def preprocess(we_model, training_data, num_data=250000, word_array_size=50, word_vector_size=50):
     # Turn each sentence/line into a word array, rejecting any that are too long or out-of-vocab
     # Save each example to a file in the cache folder
     with open(training_data) as f:
@@ -106,7 +107,7 @@ def preprocess():
         ls = []
         for line in f:
             try:
-                word_array, sent_length = make_word_array(line)
+                word_array, sent_length = make_word_array(line, we_model, word_array_size, word_vector_size)
                 ls.append(sent_length)
                 with open('./cache/training/true/' + str(num) + '.pickle','wb') as c:
                     pickle.dump(word_array, c)
@@ -124,5 +125,4 @@ def preprocess():
 
 # Main
 if __name__ == "__main__":
-    print("DEPRECATED: Please use main.py --mode preprocessing instead")
-    preprocess()
+    print("ERROR: Deprecated. Please use main.py --mode preprocess instead")

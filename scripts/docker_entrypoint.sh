@@ -40,6 +40,6 @@ gsutil cp $WE_FILE_URI ./data/${we_file}
 pip install -r requirements.txt
 echo -e "import nltk\nnltk.download('punkt')" | python
 
-python ./main.py --mode preprocess
+python ./main.py --mode preprocess ${@}
 python ./main.py --mode train ${@}
 gsutil cp -r ./output/ $MODEL_URI

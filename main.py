@@ -4,11 +4,13 @@ from torch.utils.data import DataLoader
 import numpy as np
 import preprocessing as pp
 
+DATA_DIR='./data/'
+
 def get_args():
     """Get arguments from command line."""
     args_parser = argparse.ArgumentParser()
 
-    # Data files arguments
+    # Data retrieval arguments
     args_parser.add_argument(
         '--train-file',
         help='Name of training file. If using Docker/GCS script, must use exact name stored under GCS bucket.',
@@ -19,6 +21,11 @@ def get_args():
         help='Name of word embeddings file. If using Docker/GCS script, must use exact name stored under GCS bucket.',
         #nargs='+',
         required=True)
+    args_parser.add_argument(
+        '--num-data',
+        help='Number of examples to use from the train file.',
+        type=int,
+        default=250000)
     # Experiment arguments
     args_parser.add_argument(
         '--model',
@@ -62,14 +69,14 @@ def get_args():
     args_parser.add_argument(
         '--lambda-term',
         help='Gradient penalty hyperparameter.',
-        default=1,
+        default=10,
         type=int,
         )
     args_parser.add_argument(
-        '--lr',
+        '--learning-rate',
         help='Learning rate.',
-        default=1,
-        type=int,
+        default=0.0001,
+        type=float,
         )
     args_parser.add_argument(
         '--word-vector-length',
@@ -90,7 +97,7 @@ def get_args():
         type=int,
         )
     args_parser.add_argument(
-        '--dimensionality-REDUDANT',
+        '--dimensionality-REDUNDANT',
         help='REDUNDANT, model dimensionality, need to confirm before removing',
         default=50,
         type=int,
@@ -104,18 +111,24 @@ def main():
     print("Running main.py with these parameters: ")
     print(args)
 
-    if (args.mode == "preprocess"):
-        pp.preprocess()
-        return
-
     if args.model == 'wgantwod':
         import models.wgantwod
+        from gensim.models.keyedvectors import KeyedVectors
+        we_model = KeyedVectors.load_word2vec_format(DATA_DIR+args.we_file, binary=False)
+
+        if args.mode == "preprocess":
+            pp.preprocess(we_model=we_model, training_data=DATA_DIR + args.train_file, num_data=args.num_data, \
+                word_array_size=args.sequence_length, word_vector_size=args.word_vector_length)
+            return
+
         if args.mode == "train":
-            models.wgantwod.train(batch_size=args.batch_size, epochs=args.train_epochs, d_iters=args.train_d_iters,  \
-                g_iters=args.train_g_iters, lambda_term=args.lambda_term, lr=args.lr, wv_length=args.word_vector_length, \
-                seq_length=args.sequence_length, restore=args.restore, dimensionality=args.dimensionality_REDUDANT)
-        else:
-            models.wgantwod.test(args.test_num_images)
+            models.wgantwod.train(we_model=we_model, batch_size=args.batch_size, epochs=args.train_epochs, \
+                d_iters=args.train_d_iters, g_iters=args.train_g_iters, lambda_term=args.lambda_term, \
+                lr=args.learning_rate, wv_length=args.word_vector_length, \
+                seq_length=args.sequence_length, restore=args.restore, dimensionality=args.dimensionality_REDUNDANT)
+
+        if args.mode == "test":
+            models.wgantwod.test(we_model, args.test_num_images, args.dimensionality_REDUNDANT)
     else:
         print("Invalid model!")
     return

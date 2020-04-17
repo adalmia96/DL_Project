@@ -97,14 +97,14 @@ def calc_gradient_penalty(netD, real_data, fake_data, lambda_term, dim, batch_si
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * lambda_term
     return gradient_penalty
 
-def generate_image(netG, batch_size, noise=None):
+def generate_image(netG, batch_size, noise=None, dim=50):
     if noise is None:
         noise = gen_rand_noise(batch_size)
 
     with torch.no_grad():
     	noisev = noise
     samples = netG(noisev)
-    samples = samples.view(batch_size, 1, 50, 50)
+    samples = samples.view(batch_size, 1, dim, dim)
     #samples = samples * 0.5 + 0.5
     return samples
 
@@ -320,7 +320,7 @@ class Discriminator(nn.Module):
         output = output.view(-1)
         return output
 
-def train(batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=0.0001, wv_length=50, seq_length=50, \
+def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=0.0001, wv_length=50, seq_length=50, \
     restore=False, dimensionality=50):
 
     print("Training!")
@@ -360,9 +360,9 @@ def train(batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=
     #---------------------Start Actual Training------------------------
     dataloader = training_data_loader
     dataiter = iter(dataloader)
-    for iteration in range(epochs):
+    for epoch in range(epochs):
         start_time = time.time()
-        print("Iter: " + str(iteration))
+        print("Epoch: " + str(epoch))
         #---------------------TRAIN G------------------------
         for p in aD.parameters():
             p.requires_grad_(False)  # freeze D
@@ -423,13 +423,13 @@ def train(batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=
 
         #---------------VISUALIZATION---------------------
         #if True:
-        if iteration % 100 == 99:
-            gen_images = generate_image(aG, batch_size, fixed_noise)
+        if epoch % 100 == 99:
+            gen_images = generate_image(aG, batch_size, fixed_noise, dim=dimensionality)
             sentences = ""
             for gen_image in gen_images:
                 b = gen_image.detach().cpu().numpy()
-                sentences = sentences + pp.decode_word_array(b) + "\n"
-            with open(OUTPUT_PATH + 'samples_{}.txt'.format(iteration), 'w') as f:
+                sentences = sentences + pp.decode_word_array(b, we_model) + "\n"
+            with open(OUTPUT_PATH + 'samples_{}.txt'.format(epoch), 'w') as f:
                 f.write(sentences)
             #writer.add_text('sentences', sentences, iteration)
 	#----------------------Save model----------------------
@@ -445,14 +445,14 @@ def get_bert_score(sentence, tokenizer, bertMaskedLM):
         loss = loss_fct(predictions.squeeze(),tensor_input.squeeze()).data 
         return math.exp(loss)
 
-def test(num_images=64):
+def test(we_model, num_images=64, dimensionality=50):
     aG = torch.load(OUTPUT_PATH + "generator.pt")
     sentences = []
     for i in range(2):
-        gen_images = generate_image(aG, num_images)
+        gen_images = generate_image(aG, num_images, dim=dimensionality)
         for gen_image in gen_images:
             b = gen_image.detach().cpu().numpy()
-            decode = pp.decode_word_array3(b)
+            decode = pp.decode_word_array3(b, we_model)
             #print(decode)
             sentences.append(decode)
 
@@ -466,7 +466,7 @@ def test(num_images=64):
         bsss.append(np.average(bss))
     print("Average BLEU Score", np.average(bsss))
 
-    for i, s in enumerate(sentences): 
+    for i, s in enumerate(sentences):
         sentences[i] = " ".join(s)
 
     # BERT perplexity 
@@ -476,4 +476,4 @@ def test(num_images=64):
     # bertMaskedLM.eval()
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
-    print("Average BERT Perplexity", sum([get_bert_score(sentence, tokenizer, bertMaskedLM) for s in sentences]) / len(sentences))
+    print("Average BERT Perplexity", sum([get_bert_score(s, tokenizer, bertMaskedLM) for s in sentences]) / len(sentences))
