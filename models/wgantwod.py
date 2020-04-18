@@ -102,7 +102,7 @@ def generate_image(netG, batch_size, noise=None, dim=50):
         noise = gen_rand_noise(batch_size)
 
     with torch.no_grad():
-    	noisev = noise
+        noisev = noise
     samples = netG(noisev)
     samples = samples.view(batch_size, 1, dim, dim)
     #samples = samples * 0.5 + 0.5
@@ -258,14 +258,14 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
 
         self.dim = dim
-        self.output_dim =output_dim
+        self.output_dim = output_dim
 
-        self.ln1 = nn.Linear(128, 3*3*8*self.dim)
+        self.ln1 = nn.Linear(128, 6*6*8*self.dim)
         self.rb1 = ResidualBlock(8*self.dim, 8*self.dim, 3, hw=self.dim, resample = 'up')
         self.rb2 = ResidualBlock(8*self.dim, 4*self.dim, 3, hw=self.dim, resample = 'up')
         self.rb3 = ResidualBlock(4*self.dim, 2*self.dim, 3, hw=self.dim, resample = 'up')
         self.rb4 = ResidualBlock(2*self.dim, 1*self.dim, 3, hw=self.dim, resample = 'up')
-        self.conv_sp = nn.ConvTranspose2d(1*self.dim, 1*self.dim, 3, stride=1, padding=0, bias = False) #added
+        self.conv_sp = nn.ConvTranspose2d(1*self.dim, 1*self.dim, 5, stride=1, padding=0, bias = False) #added
         self.bn  = nn.BatchNorm2d(self.dim)
 
         self.conv1 = MyConvo2d(1*self.dim, 1, 3)
@@ -273,13 +273,14 @@ class Generator(nn.Module):
         #self.tanh = nn.Tanh()
 
     def forward(self, input):
-        output = self.ln1(input.contiguous())
-        output = output.view(-1, 8*self.dim, 3, 3)
-        output = self.rb1(output)
+        #breakpoint()
+        output = self.ln1(input.contiguous()) #64 x 28800
+        output = output.view(-1, 8*self.dim, 6, 6) #64 x 800 x 6 x 6
+        output = self.rb1(output) 
         output = self.rb2(output)
         output = self.rb3(output)
-        output = self.rb4(output)
-        output = self.conv_sp(output) #added
+        output = self.rb4(output) #64 x 100 x 96 x 96
+        output = self.conv_sp(output) #64 x 100 x 100 x 100
 
         output = self.bn(output)
         output = self.relu(output)
@@ -288,7 +289,7 @@ class Generator(nn.Module):
         output = output.view(-1, self.output_dim)
         return output
 
-class Discriminator(nn.Module):
+class Discriminator(nn.Module): 
     def __init__(self, dim):
         super(Discriminator, self).__init__()
 
@@ -296,15 +297,15 @@ class Discriminator(nn.Module):
 
         self.tanh = nn.Tanh() #added
         self.conv1 = MyConvo2d(1, self.dim, 3, he_init = False)
-        self.conv_sp = nn.Conv2d(1*self.dim, 1*self.dim, 3, stride=1, padding=0, bias = False) #added
-        self.rb1 = ResidualBlock(self.dim, 2*self.dim, 3, resample = 'down', hw=48)
-        self.rb1 = ResidualBlock(self.dim, 2*self.dim, 3, resample = 'down', hw=48)
-        self.rb2 = ResidualBlock(2*self.dim, 4*self.dim, 3, resample = 'down', hw=int(48/2))
-        self.rb3 = ResidualBlock(4*self.dim, 8*self.dim, 3, resample = 'down', hw=int(48/4))
-        self.rb4 = ResidualBlock(8*self.dim, 8*self.dim, 3, resample = 'down', hw=int(48/8))
-        self.ln1 = nn.Linear(4*4*8*self.dim, 1)
+        self.conv_sp = nn.Conv2d(1*self.dim, 1*self.dim, 5, stride=1, padding=0, bias = False) #added
+        self.rb1 = ResidualBlock(self.dim, 2*self.dim, 3, resample = 'down', hw=96)
+        self.rb2 = ResidualBlock(2*self.dim, 4*self.dim, 3, resample = 'down', hw=int(96/2))
+        self.rb3 = ResidualBlock(4*self.dim, 8*self.dim, 3, resample = 'down', hw=int(96/4))
+        self.rb4 = ResidualBlock(8*self.dim, 8*self.dim, 3, resample = 'down', hw=int(96/8))
+        self.ln1 = nn.Linear(8*8*8*self.dim, 1)
 
     def forward(self, input):
+        #breakpoint()
         output = input.contiguous()
         output = output.view(-1, 1, self.dim, self.dim)
         output = self.tanh(output) #added
@@ -314,10 +315,10 @@ class Discriminator(nn.Module):
         output = self.rb1(output)
         output = self.rb2(output)
         output = self.rb3(output)
-        output = self.rb4(output)
-        output = output.view(-1, 4*4*8*self.dim)
-        output = self.ln1(output)
-        output = output.view(-1)
+        output = self.rb4(output) #64 x 800 x 6 x 6
+        output = output.view(-1, 8*8*8*self.dim) #144 x 12800
+        output = self.ln1(output) #144 x 1
+        output = output.view(-1) #144
         return output
 
 def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=0.0001, wv_length=50, seq_length=50, \
@@ -338,7 +339,6 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
         aG = torch.load(OUTPUT_PATH + "generator.pt")
         aD = torch.load(OUTPUT_PATH + "discriminator.pt")
     else:
-        # TODO change these to variables
         aG = Generator(dimensionality, output_dim)
         aD = Discriminator(dimensionality)
 
@@ -355,11 +355,12 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
     one = one.to(device)
     mone = mone.to(device)
 
-    fixed_noise = gen_rand_noise(batch_size)
+    fixed_noise = gen_rand_noise(batch_size) # batch_size x 128
 
     #---------------------Start Actual Training------------------------
     dataloader = training_data_loader
     dataiter = iter(dataloader)
+    disc_costs = np.zeros(epochs)
     for epoch in range(epochs):
         start_time = time.time()
         print("Epoch: " + str(epoch))
@@ -371,11 +372,11 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
         for i in range(g_iters):
             print("Generator iters: " + str(i))
             aG.zero_grad()
-            noise = gen_rand_noise(batch_size)
+            noise = gen_rand_noise(batch_size) # batch_size x 128
             noise.requires_grad_(True)
-            fake_data = aG(noise)
-            gen_cost = aD(fake_data)
-            gen_cost = gen_cost.mean()
+            fake_data = aG(noise) #16 x 10000 - should be 64 x 10000
+            gen_cost = aD(fake_data) #36
+            gen_cost = gen_cost.mean() #1
 
             gen_cost.backward(mone)
             gen_cost = -gen_cost
@@ -393,7 +394,7 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
             noise = gen_rand_noise(batch_size)
             with torch.no_grad():
                 noisev = noise  # totally freeze G, training D
-            fake_data = aG(noisev).detach()
+            fake_data = aG(noisev).detach() #16 x 10000
             batch = next(dataiter, None)
             if batch is None:
                 dataiter = iter(dataloader)
@@ -416,6 +417,7 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
 
             # final disc cost
             disc_cost = disc_fake - disc_real + gradient_penalty
+            disc_costs[epoch] = disc_cost
             disc_cost.backward()
             w_dist = disc_fake  - disc_real
             optimizer_d.step()
@@ -434,6 +436,7 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
             #writer.add_text('sentences', sentences, iteration)
 	#----------------------Save model----------------------
             print("Saving models!")
+            pickle.dump(disc_costs, open(OUTPUT_PATH + "costs.p", "wb"))
             torch.save(aG, OUTPUT_PATH + "generator.pt")
             torch.save(aD, OUTPUT_PATH + "discriminator.pt")
 
@@ -442,7 +445,7 @@ def get_bert_score(sentence, tokenizer, bertMaskedLM):
         tensor_input = torch.tensor([tokenizer.convert_tokens_to_ids(tokenize_input)])
         predictions=bertMaskedLM(tensor_input)
         loss_fct = torch.nn.CrossEntropyLoss()
-        loss = loss_fct(predictions.squeeze(),tensor_input.squeeze()).data 
+        loss = loss_fct(predictions.squeeze(),tensor_input.squeeze()).data
         return math.exp(loss)
 
 def test(we_model, num_images=64, dimensionality=50):
@@ -469,7 +472,7 @@ def test(we_model, num_images=64, dimensionality=50):
     for i, s in enumerate(sentences):
         sentences[i] = " ".join(s)
 
-    # BERT perplexity 
+    # BERT perplexity
     bertMaskedLM = BertForMaskedLM.from_pretrained('bert-base-uncased')
 
     # make results deterministic

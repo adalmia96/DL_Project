@@ -117,11 +117,12 @@ def main():
         we_model = KeyedVectors.load_word2vec_format(DATA_DIR+args.we_file, binary=False)
 
         if args.mode == "preprocess":
+            print("in preprocess")
             pp.preprocess(we_model=we_model, training_data=DATA_DIR + args.train_file, num_data=args.num_data, \
                 word_array_size=args.sequence_length, word_vector_size=args.word_vector_length)
-            return
 
         if args.mode == "train":
+            print("In train")
             models.wgantwod.train(we_model=we_model, batch_size=args.batch_size, epochs=args.train_epochs, \
                 d_iters=args.train_d_iters, g_iters=args.train_g_iters, lambda_term=args.lambda_term, \
                 lr=args.learning_rate, wv_length=args.word_vector_length, \

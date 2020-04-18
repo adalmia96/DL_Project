@@ -27,7 +27,7 @@ JOB_NAME=gans_training_job_$(date +%Y%m%d_%H%M%S)
 #JOB_DIR=gs://${BUCKET_ID}/models
 # Note: these files have already been copied over when the image was built
 TRAIN_FILE=news.2009.en.shuffled
-WE_FILE=glove.6B.50d.w2v.txt
+WE_FILE=glove.6B.100d.w2v.txt
 MODEL=wgantwod
 
 gcloud beta ai-platform jobs submit training ${JOB_NAME} \
@@ -37,8 +37,11 @@ gcloud beta ai-platform jobs submit training ${JOB_NAME} \
 	--train-file ${TRAIN_FILE} \
 	--we-file ${WE_FILE} \
 	--model ${MODEL} \
-	--train-epochs=1 \
-	--batch-size=64
+	--train-epochs=10000 \
+	--batch-size=64 \
+    --word-vector-length 100 \
+    --sequence-length 100 \
+    --dimensionality-REDUNDANT 100
 
 echo "You may type Ctrl-C if you wish to view the logs online instead."
 # Stream the logs from the job
