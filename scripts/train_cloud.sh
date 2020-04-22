@@ -38,10 +38,11 @@ gcloud beta ai-platform jobs submit training ${JOB_NAME} \
 	--we-file ${WE_FILE} \
 	--model ${MODEL} \
 	--train-epochs=10000 \
-	--batch-size=64 \
+	--batch-size=32 \
     --word-vector-length 100 \
     --sequence-length 100 \
-    --dimensionality-REDUNDANT 100
+    --dimensionality-REDUNDANT 100 \
+    --num-data 250000
 
 echo "You may type Ctrl-C if you wish to view the logs online instead."
 # Stream the logs from the job

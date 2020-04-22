@@ -259,13 +259,15 @@ class Generator(nn.Module):
 
         self.dim = dim
         self.output_dim = output_dim
+        self.multiple_50 = int(self.dim/50)
+        ks_sp = self.dim - self.multiple_50 * 48 + 1 #kernel size calculation
 
-        self.ln1 = nn.Linear(128, 6*6*8*self.dim)
+        self.ln1 = nn.Linear(128, self.multiple_50*self.multiple_50*3*3*8*self.dim)
         self.rb1 = ResidualBlock(8*self.dim, 8*self.dim, 3, hw=self.dim, resample = 'up')
         self.rb2 = ResidualBlock(8*self.dim, 4*self.dim, 3, hw=self.dim, resample = 'up')
         self.rb3 = ResidualBlock(4*self.dim, 2*self.dim, 3, hw=self.dim, resample = 'up')
         self.rb4 = ResidualBlock(2*self.dim, 1*self.dim, 3, hw=self.dim, resample = 'up')
-        self.conv_sp = nn.ConvTranspose2d(1*self.dim, 1*self.dim, 5, stride=1, padding=0, bias = False) #added
+        self.conv_sp = nn.ConvTranspose2d(1*self.dim, 1*self.dim, ks_sp, stride=1, padding=0, bias = False) #added
         self.bn  = nn.BatchNorm2d(self.dim)
 
         self.conv1 = MyConvo2d(1*self.dim, 1, 3)
@@ -275,12 +277,18 @@ class Generator(nn.Module):
     def forward(self, input):
         #breakpoint()
         output = self.ln1(input.contiguous()) #64 x 28800
-        output = output.view(-1, 8*self.dim, 6, 6) #64 x 800 x 6 x 6
+        output = output.view(-1, 8*self.dim, 3*self.multiple_50, 3*self.multiple_50) #64 x 800 x 6 x 6
+        print('64 x 800 x 6 x 6')
+        print(output.size())
         output = self.rb1(output) 
         output = self.rb2(output)
         output = self.rb3(output)
         output = self.rb4(output) #64 x 100 x 96 x 96
+        print('64 x 100 x 96 x 96')
+        print(output.size())
         output = self.conv_sp(output) #64 x 100 x 100 x 100
+        print('64 x 100 x 100 x100')
+        print(output.size())
 
         output = self.bn(output)
         output = self.relu(output)
@@ -294,15 +302,18 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
 
         self.dim = dim
+        self.multiple_50 = int(self.dim/50)
+        scaled_hw = self.multiple_50 * 48
+        ks_sp = self.dim - self.multiple_50 * 48 + 1 #kernel size calculation
 
         self.tanh = nn.Tanh() #added
         self.conv1 = MyConvo2d(1, self.dim, 3, he_init = False)
-        self.conv_sp = nn.Conv2d(1*self.dim, 1*self.dim, 5, stride=1, padding=0, bias = False) #added
-        self.rb1 = ResidualBlock(self.dim, 2*self.dim, 3, resample = 'down', hw=96)
-        self.rb2 = ResidualBlock(2*self.dim, 4*self.dim, 3, resample = 'down', hw=int(96/2))
-        self.rb3 = ResidualBlock(4*self.dim, 8*self.dim, 3, resample = 'down', hw=int(96/4))
-        self.rb4 = ResidualBlock(8*self.dim, 8*self.dim, 3, resample = 'down', hw=int(96/8))
-        self.ln1 = nn.Linear(8*8*8*self.dim, 1)
+        self.conv_sp = nn.Conv2d(1*self.dim, 1*self.dim, ks_sp, stride=1, padding=0, bias = False) #added
+        self.rb1 = ResidualBlock(self.dim, 2*self.dim, 3, resample = 'down', hw=scaled_hw)
+        self.rb2 = ResidualBlock(2*self.dim, 4*self.dim, 3, resample = 'down', hw=int(scaled_hw/2))
+        self.rb3 = ResidualBlock(4*self.dim, 8*self.dim, 3, resample = 'down', hw=int(scaled_hw/4))
+        self.rb4 = ResidualBlock(8*self.dim, 8*self.dim, 3, resample = 'down', hw=int(scaled_hw/8))
+        self.ln1 = nn.Linear(self.multiple_50*self.multiple_50*4*4*8*self.dim, 1)
 
     def forward(self, input):
         #breakpoint()
@@ -316,8 +327,12 @@ class Discriminator(nn.Module):
         output = self.rb2(output)
         output = self.rb3(output)
         output = self.rb4(output) #64 x 800 x 6 x 6
-        output = output.view(-1, 8*8*8*self.dim) #144 x 12800
+        print('64 x 800 x 6 x 6')
+        print(output.size())
+        output = output.view(-1, self.multiple_50*self.multiple_50*4*4*8*self.dim) #144 x 12800
         output = self.ln1(output) #144 x 1
+        print('144 x 1')
+        print(output.size())
         output = output.view(-1) #144
         return output
 
