@@ -356,13 +356,13 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
     training_data_loader = torch.utils.data.DataLoader(training_dataset, batch_size=batch_size,
                                              shuffle=True, num_workers=0, drop_last=True)
 
-    output_dim = wv_length*seq_length*1
+    output_dim = seq_length*wv_length*1
     if restore:
         aG = torch.load(OUTPUT_PATH + "generator.pt")
         aD = torch.load(OUTPUT_PATH + "discriminator.pt")
     else:
-        aG = Generator(wv_length, seq_length, output_dim)
-        aD = Discriminator(wv_length, seq_length)
+        aG = Generator(seq_length, wv_length, output_dim)
+        aD = Discriminator(seq_length, wv_length)
 
         aG.apply(weights_init)
         aD.apply(weights_init)
@@ -434,7 +434,7 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
 
             #showMemoryUsage(0)
             # train with interpolates data
-            gradient_penalty = calc_gradient_penalty(aD, real_data, fake_data, lambda_term, batch_size, wv_length, seq_length)
+            gradient_penalty = calc_gradient_penalty(aD, real_data, fake_data, lambda_term, batch_size, seq_length, wv_length)
             #showMemoryUsage(0)
 
             # final disc cost
@@ -446,13 +446,12 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
 
 
         #---------------VISUALIZATION---------------------
-        if True:
-        #if epoch % 100 == 99:
-            gen_images = generate_image(aG, batch_size, fixed_noise, dim1=wv_length, dim2=seq_length)
+        #if True:
+        if epoch % 100 == 99:
+            gen_images = generate_image(aG, batch_size, noise=fixed_noise, dim1=seq_length, dim2=wv_length)
             sentences = ""
             for gen_image in gen_images:
                 b = gen_image.detach().cpu().numpy()
-                breakpoint()
                 sentences = sentences + pp.decode_word_array(b, we_model) + "\n"
             with open(OUTPUT_PATH + 'samples_{}.txt'.format(epoch), 'w') as f:
                 f.write(sentences)
@@ -471,18 +470,21 @@ def get_bert_score(sentence, tokenizer, bertMaskedLM):
         loss = loss_fct(predictions.squeeze(),tensor_input.squeeze()).data
         return math.exp(loss)
 
-def test(we_model, num_images=64, wv_length=50, seq_length=50, generator_file="generator.pt"):
+def test(we_model, num_images=128, wv_length=50, seq_length=50, generator_file="generator.pt"):
 
     aG = torch.load(OUTPUT_PATH + generator_file)
     sentences = []
-    for i in range(2):
-        gen_images = generate_image(aG, num_images, dim1=wv_length, dim2=seq_length)
+    images_per_batch = 32
+    for i in range(int(num_images / images_per_batch)):
+        gen_images = generate_image(aG, images_per_batch, dim1=seq_length, dim2=wv_length)
         for gen_image in gen_images:
             b = gen_image.detach().cpu().numpy()
             decode = pp.decode_word_array3(b, we_model)
             #print(decode)
             sentences.append(decode)
 
+    # take first sentence and create an image
+    #pp.create_fancy_image(' '.join(sentences[0]), we_model, seq_length, wv_length)
 
     bsss = []
     for t in sentences:

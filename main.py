@@ -102,8 +102,8 @@ def get_args():
         )
     args_parser.add_argument(
         '--test-num-images',
-        help='Number of images to generate when testing the model.',
-        default=64,
+        help='Number of images/sentences to generate when testing the model. Multiple of 32.',
+        default=128,
         type=int,
         )
     return args_parser.parse_args()
@@ -134,7 +134,8 @@ def main():
                 generator_file=args.generator_file)
 
         if args.mode == "test":
-            models.wgantwod.test(we_model, args.test_num_images, args.discriminator_file)
+            models.wgantwod.test(we_model=we_model, num_images=args.test_num_images, wv_length=args.word_vector_length, \
+            seq_length=args.sequence_length, generator_file=args.generator_file)
     else:
         print("Invalid model!")
     return
