@@ -39,7 +39,7 @@ def get_args():
         default='test')
     args_parser.add_argument(
         '--batch-size',
-        help='Batch size for each training and evaluation step.',
+        help='Batch size for each training and evaluation step. Must be divisible by 8.',
         type=int,
         default=64)
     args_parser.add_argument(
@@ -80,13 +80,13 @@ def get_args():
         )
     args_parser.add_argument(
         '--word-vector-length',
-        help='Dimensionality of a specific word vector.',
+        help='Dimensionality of a specific word vector. Must be a multiple of 50.',
         default=50,
         type=int,
         )
     args_parser.add_argument(
         '--sequence-length',
-        help='Maximum length of a sentence.',
+        help='Maximum length of a sentence. Must be a multiple of 50.',
         default=50,
         type=int,
         )
@@ -94,12 +94,6 @@ def get_args():
         '--test-num-images',
         help='Number of images to generate when testing the model.',
         default=64,
-        type=int,
-        )
-    args_parser.add_argument(
-        '--dimensionality-REDUNDANT',
-        help='REDUNDANT, model dimensionality, need to confirm before removing',
-        default=50,
         type=int,
         )
     return args_parser.parse_args()
@@ -126,10 +120,10 @@ def main():
             models.wgantwod.train(we_model=we_model, batch_size=args.batch_size, epochs=args.train_epochs, \
                 d_iters=args.train_d_iters, g_iters=args.train_g_iters, lambda_term=args.lambda_term, \
                 lr=args.learning_rate, wv_length=args.word_vector_length, \
-                seq_length=args.sequence_length, restore=args.restore, dimensionality=args.dimensionality_REDUNDANT)
+                seq_length=args.sequence_length, restore=args.restore)
 
         if args.mode == "test":
-            models.wgantwod.test(we_model, args.test_num_images, args.dimensionality_REDUNDANT)
+            models.wgantwod.test(we_model, args.test_num_images)
     else:
         print("Invalid model!")
     return

@@ -75,13 +75,14 @@ def loader_funct(fp):
         return pickle.load(f)
 
 
-def calc_gradient_penalty(netD, real_data, fake_data, lambda_term, batch_size, dim):
+def calc_gradient_penalty(netD, real_data, fake_data, lambda_term, batch_size, dim1, dim2):
     alpha = torch.rand(batch_size, 1)
     alpha = alpha.expand(batch_size, int(real_data.nelement()/batch_size)).contiguous()
-    alpha = alpha.view(batch_size, 1, dim, dim)
+    alpha = alpha.view(batch_size, 1, dim1, dim2)
     alpha = alpha.to(device)
 
-    fake_data = fake_data.view(batch_size, 1, dim, dim)
+    fake_data = fake_data.view(batch_size, 1, dim1, dim2)
+    real_data = real_data.view(batch_size, 1, dim1, dim2)
     interpolates = alpha * real_data.detach() + ((1 - alpha) * fake_data.detach())
 
     interpolates = interpolates.to(device)
@@ -185,7 +186,7 @@ class UpSampleConv(nn.Module):
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, input_dim, output_dim, kernel_size, hw, resample=None):
+    def __init__(self, input_dim, output_dim, kernel_size, height, width, resample=None):
         super(ResidualBlock, self).__init__()
 
         self.input_dim = input_dim
@@ -197,15 +198,15 @@ class ResidualBlock(nn.Module):
         self.relu1 = nn.ReLU()
         self.relu2 = nn.ReLU()
         if resample == 'down':
-            self.bn1 = nn.LayerNorm([input_dim, hw, hw])
-            self.bn2 = nn.LayerNorm([input_dim, hw, hw])
+            self.bn1 = nn.LayerNorm([input_dim, height, width])
+            self.bn2 = nn.LayerNorm([input_dim, height, width])
         elif resample == 'up':
             self.bn1 = nn.BatchNorm2d(input_dim)
             self.bn2 = nn.BatchNorm2d(output_dim)
         elif resample == None:
             #TODO: ????
             self.bn1 = nn.BatchNorm2d(output_dim)
-            self.bn2 = nn.LayerNorm([input_dim, hw, hw])
+            self.bn2 = nn.LayerNorm([input_dim, height, width])
         else:
             raise Exception('invalid resample value')
 
@@ -254,19 +255,22 @@ class ReLULayer(nn.Module):
         return output
 
 class Generator(nn.Module):
-    def __init__(self, dim, output_dim):
+    def __init__(self, dim1, dim2, output_dim):
         super(Generator, self).__init__()
 
-        self.dim = dim
+        self.dim = dim1
+        self.height = dim1
+        self.width = dim2
         self.output_dim = output_dim
-        self.multiple_50 = int(self.dim/50)
-        ks_sp = self.dim - self.multiple_50 * 48 + 1 #kernel size calculation
+        self.height_mult50 = int(self.height/50) # Multiple of 50
+        self.width_mult50 = int(self.width/50) # Multiple of 50
+        ks_sp = (self.height - self.height_mult50 * 48 + 1, self.width - self.width_mult50 * 48 + 1) #calculation
 
-        self.ln1 = nn.Linear(128, self.multiple_50*self.multiple_50*3*3*8*self.dim)
-        self.rb1 = ResidualBlock(8*self.dim, 8*self.dim, 3, hw=self.dim, resample = 'up')
-        self.rb2 = ResidualBlock(8*self.dim, 4*self.dim, 3, hw=self.dim, resample = 'up')
-        self.rb3 = ResidualBlock(4*self.dim, 2*self.dim, 3, hw=self.dim, resample = 'up')
-        self.rb4 = ResidualBlock(2*self.dim, 1*self.dim, 3, hw=self.dim, resample = 'up')
+        self.ln1 = nn.Linear(128, self.height_mult50*self.width_mult50*3*3*8*self.dim)
+        self.rb1 = ResidualBlock(8*self.dim, 8*self.dim, 3, height=self.height, width=self.width, resample = 'up')
+        self.rb2 = ResidualBlock(8*self.dim, 4*self.dim, 3, height=self.height, width=self.width, resample = 'up')
+        self.rb3 = ResidualBlock(4*self.dim, 2*self.dim, 3, height=self.height, width=self.width, resample = 'up')
+        self.rb4 = ResidualBlock(2*self.dim, 1*self.dim, 3, height=self.height, width=self.width, resample = 'up')
         self.conv_sp = nn.ConvTranspose2d(1*self.dim, 1*self.dim, ks_sp, stride=1, padding=0, bias = False) #added
         self.bn  = nn.BatchNorm2d(self.dim)
 
@@ -277,18 +281,18 @@ class Generator(nn.Module):
     def forward(self, input):
         #breakpoint()
         output = self.ln1(input.contiguous()) #64 x 28800
-        output = output.view(-1, 8*self.dim, 3*self.multiple_50, 3*self.multiple_50) #64 x 800 x 6 x 6
-        print('64 x 800 x 6 x 6')
-        print(output.size())
+        output = output.view(-1, 8*self.dim, 3*self.height_mult50, 3*self.width_mult50) #64 x 800 x 6 x 6
+        #print('64 x 800 x 6 x 6')
+        #print(output.size())
         output = self.rb1(output) 
         output = self.rb2(output)
         output = self.rb3(output)
         output = self.rb4(output) #64 x 100 x 96 x 96
-        print('64 x 100 x 96 x 96')
-        print(output.size())
+        #print('64 x 100 x 96 x 96')
+        #print(output.size())
         output = self.conv_sp(output) #64 x 100 x 100 x 100
-        print('64 x 100 x 100 x100')
-        print(output.size())
+        #print('64 x 100 x 100 x100')
+        #print(output.size())
 
         output = self.bn(output)
         output = self.relu(output)
@@ -298,27 +302,30 @@ class Generator(nn.Module):
         return output
 
 class Discriminator(nn.Module): 
-    def __init__(self, dim):
+    def __init__(self, dim1, dim2):
         super(Discriminator, self).__init__()
-
-        self.dim = dim
-        self.multiple_50 = int(self.dim/50)
-        scaled_hw = self.multiple_50 * 48
-        ks_sp = self.dim - self.multiple_50 * 48 + 1 #kernel size calculation
-
+        self.dim = dim1
+        self.height = dim1
+        self.width = dim2
+        self.height_mult50 = int(self.height/50) # Multiple of 50
+        self.width_mult50 = int(self.width/50) # Multiple of 50
+        ks_sp = (self.height - self.height_mult50 * 48 + 1, self.width - self.width_mult50 * 48 + 1) #calculation
+        scaled_height = self.height_mult50 * 48
+        scaled_width = self.width_mult50 * 48
+        
         self.tanh = nn.Tanh() #added
         self.conv1 = MyConvo2d(1, self.dim, 3, he_init = False)
         self.conv_sp = nn.Conv2d(1*self.dim, 1*self.dim, ks_sp, stride=1, padding=0, bias = False) #added
-        self.rb1 = ResidualBlock(self.dim, 2*self.dim, 3, resample = 'down', hw=scaled_hw)
-        self.rb2 = ResidualBlock(2*self.dim, 4*self.dim, 3, resample = 'down', hw=int(scaled_hw/2))
-        self.rb3 = ResidualBlock(4*self.dim, 8*self.dim, 3, resample = 'down', hw=int(scaled_hw/4))
-        self.rb4 = ResidualBlock(8*self.dim, 8*self.dim, 3, resample = 'down', hw=int(scaled_hw/8))
-        self.ln1 = nn.Linear(self.multiple_50*self.multiple_50*4*4*8*self.dim, 1)
+        self.rb1 = ResidualBlock(self.dim, 2*self.dim, 3, resample = 'down', height=scaled_height, width=scaled_width)
+        self.rb2 = ResidualBlock(2*self.dim, 4*self.dim, 3, resample = 'down', height=int(scaled_height/2), width=int(scaled_width/2))
+        self.rb3 = ResidualBlock(4*self.dim, 8*self.dim, 3, resample = 'down', height=int(scaled_height/4), width=int(scaled_width/4))
+        self.rb4 = ResidualBlock(8*self.dim, 8*self.dim, 3, resample = 'down', height=int(scaled_height/8), width=int(scaled_width/8))
+        self.ln1 = nn.Linear(self.height_mult50*self.width_mult50*4*4*8*self.dim, 1)
 
     def forward(self, input):
         #breakpoint()
         output = input.contiguous()
-        output = output.view(-1, 1, self.dim, self.dim)
+        output = output.view(-1, 1, self.height, self.width)
         output = self.tanh(output) #added
         output = self.conv1(output)
         output = self.conv_sp(output) #added
@@ -327,17 +334,17 @@ class Discriminator(nn.Module):
         output = self.rb2(output)
         output = self.rb3(output)
         output = self.rb4(output) #64 x 800 x 6 x 6
-        print('64 x 800 x 6 x 6')
-        print(output.size())
-        output = output.view(-1, self.multiple_50*self.multiple_50*4*4*8*self.dim) #144 x 12800
+        #print('64 x 800 x 6 x 6')
+        #print(output.size())
+        output = output.view(-1, self.height_mult50*self.width_mult50*4*4*8*self.dim) #144 x 12800
         output = self.ln1(output) #144 x 1
-        print('144 x 1')
-        print(output.size())
+        #print('144 x 1')
+        #print(output.size())
         output = output.view(-1) #144
         return output
 
 def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=0.0001, wv_length=50, seq_length=50, \
-    restore=False, dimensionality=50):
+    restore=False):
 
     print("Training!")
     #---------------------Initialize Stuff------------------------
@@ -354,8 +361,8 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
         aG = torch.load(OUTPUT_PATH + "generator.pt")
         aD = torch.load(OUTPUT_PATH + "discriminator.pt")
     else:
-        aG = Generator(dimensionality, output_dim)
-        aD = Discriminator(dimensionality)
+        aG = Generator(wv_length, seq_length, output_dim)
+        aD = Discriminator(wv_length, seq_length)
 
         aG.apply(weights_init)
         aD.apply(weights_init)
@@ -389,7 +396,7 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
             aG.zero_grad()
             noise = gen_rand_noise(batch_size) # batch_size x 128
             noise.requires_grad_(True)
-            fake_data = aG(noise) #16 x 10000 - should be 64 x 10000
+            fake_data = aG(noise) #64 x 10000 
             gen_cost = aD(fake_data) #36
             gen_cost = gen_cost.mean() #1
 
@@ -409,7 +416,7 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
             noise = gen_rand_noise(batch_size)
             with torch.no_grad():
                 noisev = noise  # totally freeze G, training D
-            fake_data = aG(noisev).detach() #16 x 10000
+            fake_data = aG(noisev).detach() #64 x 10000
             batch = next(dataiter, None)
             if batch is None:
                 dataiter = iter(dataloader)
@@ -427,7 +434,7 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
 
             #showMemoryUsage(0)
             # train with interpolates data
-            gradient_penalty = calc_gradient_penalty(aD, real_data, fake_data, lambda_term, batch_size, dimensionality)
+            gradient_penalty = calc_gradient_penalty(aD, real_data, fake_data, lambda_term, batch_size, wv_length, seq_length)
             #showMemoryUsage(0)
 
             # final disc cost
@@ -463,7 +470,7 @@ def get_bert_score(sentence, tokenizer, bertMaskedLM):
         loss = loss_fct(predictions.squeeze(),tensor_input.squeeze()).data
         return math.exp(loss)
 
-def test(we_model, num_images=64, dimensionality=50, wv_length=50, seq_length=50):
+def test(we_model, num_images=64, wv_length=50, seq_length=50):
 
     aG = torch.load(OUTPUT_PATH + "generator.pt")
     sentences = []
@@ -492,7 +499,7 @@ def test(we_model, num_images=64, dimensionality=50, wv_length=50, seq_length=50
     bertMaskedLM = BertForMaskedLM.from_pretrained('bert-base-uncased')
 
     # make results deterministic
-    # bertMaskedLM.eval()
+    bertMaskedLM.eval()
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
     print("Average BERT Perplexity", sum([get_bert_score(s, tokenizer, bertMaskedLM) for s in sentences]) / len(sentences))

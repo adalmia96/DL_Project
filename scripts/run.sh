@@ -4,11 +4,11 @@ DIR="$(cd "$(dirname "$0")" && pwd -P)"
 cd $DIR/..
 
 TRAIN_FILE='news.2009.en.shuffled'
-WE_FILE='glove.6B.50d.w2v.txt'
+WE_FILE='glove.6B.100d.w2v.txt'
 SENTENCE_LENGTH=50
-WV_LENGTH=50
+WV_LENGTH=100
 MODEL='wgantwod'
-DIM_REDUNDANT=50 # Remove after replacing with SENTENCE_LENGTH and WV_LENGTH in wgantwoo
+#DIM_REDUNDANT=50 # Remove after replacing with SENTENCE_LENGTH and WV_LENGTH in wgantwoo
 
 if [[ $1 == 'preprocess' ]] || [[ $1 == 'all' ]]
 then
@@ -28,7 +28,6 @@ then
     --train-g-iters 1 \
     --lambda-term 10 \
     --learning-rate 0.0001 \
-    --dimensionality-REDUNDANT $DIM_REDUNDANT \
     --mode train
 fi
 
@@ -36,6 +35,5 @@ if [[ $1 == 'test' ]] || [[ $1 == 'all' ]]
 then
     python main.py --train-file $TRAIN_FILE --we-file $WE_FILE --model $MODEL \
     --test-num-images 64 \
-    --dimensionality-REDUNDANT $DIM_REDUNDANT \
     --mode test
 fi
