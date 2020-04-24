@@ -28,7 +28,8 @@ then
     --train-g-iters 1 \
     --lambda-term 10 \
     --learning-rate 0.0001 \
-    --mode train
+    --mode train \
+    --discriminator-file hello.pt
 fi
 
 if [[ $1 == 'test' ]] || [[ $1 == 'all' ]]

@@ -40,8 +40,7 @@ gcloud beta ai-platform jobs submit training ${JOB_NAME} \
 	--train-epochs=10000 \
 	--batch-size=32 \
     --word-vector-length 100 \
-    --sequence-length 100 \
-    --dimensionality-REDUNDANT 100 \
+    --sequence-length 50 \
     --num-data 250000
 
 echo "You may type Ctrl-C if you wish to view the logs online instead."

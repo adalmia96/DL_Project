@@ -19,5 +19,4 @@ Ensure you have [`gsutils`](https://cloud.google.com/storage/docs/gsutil_install
 To update the Docker image, ensure you have  `docker` and `gsutils` installed. Then run `./scripts/upload-image.sh`. You should not need to do this unless you need to add extra dependencies not included in `requirements.txt`, or if you want to avoid installing GPU dependencies if you are running the model on GPU. To avoid uploading to Google Cloud, comment out `docker push`.
 
 ### Todos
-- Refactor wgantwod model to remove `dimensionality` variable and preprocessing to work with passed in arguments
 - Add another script for hyperparameter tuning (and [support in the code](https://cloud.google.com/ai-platform/training/docs/custom-containers-training#submit_a_hyperparameter_tuning_job))

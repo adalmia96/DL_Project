@@ -22,6 +22,16 @@ def get_args():
         #nargs='+',
         required=True)
     args_parser.add_argument(
+        '--generator-file',
+        help='Name of generator file output.',
+        type=str,
+        default='generator.pt')
+    args_parser.add_argument(
+        '--discriminator-file',
+        help='Name of discriminator input or output.',
+        type=str,
+        default='discriminator.pt')
+    args_parser.add_argument(
         '--num-data',
         help='Number of examples to use from the train file.',
         type=int,
@@ -44,13 +54,13 @@ def get_args():
         default=64)
     args_parser.add_argument(
         '--train-epochs',
-        help='Maximum number of times generator and discrimator iters are run.',
+        help='Maximum number of times generator and discriminator iters are run.',
         default=10000,
         type=int,
         )
     args_parser.add_argument(
         '--train-d-iters',
-        help='Iterations discrimator is run for within each training epoch.',
+        help='Iterations discriminator is run for within each training epoch.',
         default=5,
         type=int,
         )
@@ -120,10 +130,11 @@ def main():
             models.wgantwod.train(we_model=we_model, batch_size=args.batch_size, epochs=args.train_epochs, \
                 d_iters=args.train_d_iters, g_iters=args.train_g_iters, lambda_term=args.lambda_term, \
                 lr=args.learning_rate, wv_length=args.word_vector_length, \
-                seq_length=args.sequence_length, restore=args.restore)
+                seq_length=args.sequence_length, restore=args.restore, discriminator_file=args.discriminator_file, \
+                generator_file=args.generator_file)
 
         if args.mode == "test":
-            models.wgantwod.test(we_model, args.test_num_images)
+            models.wgantwod.test(we_model, args.test_num_images, args.discriminator_file)
     else:
         print("Invalid model!")
     return

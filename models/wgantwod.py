@@ -344,7 +344,7 @@ class Discriminator(nn.Module):
         return output
 
 def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=0.0001, wv_length=50, seq_length=50, \
-    restore=False):
+    restore=False, discriminator_file="discriminator.pt", generator_file="generator.pt"):
 
     print("Training!")
     #---------------------Initialize Stuff------------------------
@@ -446,12 +446,13 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
 
 
         #---------------VISUALIZATION---------------------
-        #if True:
-        if epoch % 100 == 99:
+        if True:
+        #if epoch % 100 == 99:
             gen_images = generate_image(aG, batch_size, fixed_noise, dim1=wv_length, dim2=seq_length)
             sentences = ""
             for gen_image in gen_images:
                 b = gen_image.detach().cpu().numpy()
+                breakpoint()
                 sentences = sentences + pp.decode_word_array(b, we_model) + "\n"
             with open(OUTPUT_PATH + 'samples_{}.txt'.format(epoch), 'w') as f:
                 f.write(sentences)
@@ -459,8 +460,8 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
 	#----------------------Save model----------------------
             print("Saving models!")
             pickle.dump(disc_costs, open(OUTPUT_PATH + "costs.p", "wb"))
-            torch.save(aG, OUTPUT_PATH + "generator.pt")
-            torch.save(aD, OUTPUT_PATH + "discriminator.pt")
+            torch.save(aG, OUTPUT_PATH + generator_file)
+            torch.save(aD, OUTPUT_PATH + discriminator_file)
 
 def get_bert_score(sentence, tokenizer, bertMaskedLM):
         tokenize_input = tokenizer.tokenize(sentence)
@@ -470,9 +471,9 @@ def get_bert_score(sentence, tokenizer, bertMaskedLM):
         loss = loss_fct(predictions.squeeze(),tensor_input.squeeze()).data
         return math.exp(loss)
 
-def test(we_model, num_images=64, wv_length=50, seq_length=50):
+def test(we_model, num_images=64, wv_length=50, seq_length=50, generator_file="generator.pt"):
 
-    aG = torch.load(OUTPUT_PATH + "generator.pt")
+    aG = torch.load(OUTPUT_PATH + generator_file)
     sentences = []
     for i in range(2):
         gen_images = generate_image(aG, num_images, dim1=wv_length, dim2=seq_length)
