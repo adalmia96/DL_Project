@@ -75,7 +75,7 @@ def loader_funct(fp):
         return pickle.load(f)
 
 
-def calc_gradient_penalty(netD, real_data, fake_data, lambda_term, dim, batch_size):
+def calc_gradient_penalty(netD, real_data, fake_data, lambda_term, batch_size, dim):
     alpha = torch.rand(batch_size, 1)
     alpha = alpha.expand(batch_size, int(real_data.nelement()/batch_size)).contiguous()
     alpha = alpha.view(batch_size, 1, dim, dim)
@@ -97,14 +97,14 @@ def calc_gradient_penalty(netD, real_data, fake_data, lambda_term, dim, batch_si
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * lambda_term
     return gradient_penalty
 
-def generate_image(netG, batch_size, noise=None, dim=50):
+def generate_image(netG, batch_size, noise=None, dim1=50, dim2=50):
     if noise is None:
         noise = gen_rand_noise(batch_size)
 
     with torch.no_grad():
         noisev = noise
     samples = netG(noisev)
-    samples = samples.view(batch_size, 1, dim, dim)
+    samples = samples.view(batch_size, 1, dim1, dim2)
     #samples = samples * 0.5 + 0.5
     return samples
 
@@ -427,7 +427,7 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
 
             #showMemoryUsage(0)
             # train with interpolates data
-            gradient_penalty = calc_gradient_penalty(aD, real_data, fake_data, lambda_term, dimensionality, batch_size)
+            gradient_penalty = calc_gradient_penalty(aD, real_data, fake_data, lambda_term, batch_size, dimensionality)
             #showMemoryUsage(0)
 
             # final disc cost
@@ -441,7 +441,7 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
         #---------------VISUALIZATION---------------------
         #if True:
         if epoch % 100 == 99:
-            gen_images = generate_image(aG, batch_size, fixed_noise, dim=dimensionality)
+            gen_images = generate_image(aG, batch_size, fixed_noise, dim1=wv_length, dim2=seq_length)
             sentences = ""
             for gen_image in gen_images:
                 b = gen_image.detach().cpu().numpy()
@@ -463,11 +463,12 @@ def get_bert_score(sentence, tokenizer, bertMaskedLM):
         loss = loss_fct(predictions.squeeze(),tensor_input.squeeze()).data
         return math.exp(loss)
 
-def test(we_model, num_images=64, dimensionality=50):
+def test(we_model, num_images=64, dimensionality=50, wv_length=50, seq_length=50):
+
     aG = torch.load(OUTPUT_PATH + "generator.pt")
     sentences = []
     for i in range(2):
-        gen_images = generate_image(aG, num_images, dim=dimensionality)
+        gen_images = generate_image(aG, num_images, dim1=wv_length, dim2=seq_length)
         for gen_image in gen_images:
             b = gen_image.detach().cpu().numpy()
             decode = pp.decode_word_array3(b, we_model)
