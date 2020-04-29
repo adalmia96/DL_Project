@@ -379,13 +379,14 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
     mone = mone.to(device)
 
     fixed_noise = gen_rand_noise(batch_size) # batch_size x 128
-    early_stopping = EarlyStopping(patience=patience, verbose=False, \
-        gname=generator_file, dname=discriminator_file)
+    #early_stopping = EarlyStopping(patience=patience, verbose=False, \
+    #    gname=generator_file, dname=discriminator_file)
 
     #---------------------Start Actual Training------------------------
     dataloader = training_data_loader
     dataiter = iter(dataloader)
     disc_costs = np.zeros(epochs)
+    gen_costs = np.zeros(epochs)
     for epoch in range(epochs):
         start_time = time.time()
         print("Epoch: " + str(epoch))
@@ -405,6 +406,7 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
 
             gen_cost.backward(mone)
             gen_cost = -gen_cost
+            gen_costs[epoch] = gen_cost
 
         optimizer_g.step()
         #---------------------TRAIN D------------------------
@@ -447,11 +449,11 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
             w_dist = disc_fake  - disc_real
             optimizer_d.step()
 
-        early_stopping(disc_cost, aG, aD)
+        #early_stopping(disc_cost, aG, aD)
 
-        if early_stopping.early_stop:
-            print("Early stopping at epoch " + str(epoch))
-            break
+        #if early_stopping.early_stop:
+        #    print("Early stopping at epoch " + str(epoch))
+        #    break
 
         #---------------VISUALIZATION---------------------
         #if True:
@@ -466,7 +468,8 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
             #writer.add_text('sentences', sentences, iteration)
 	#----------------------Save model----------------------
             print("Saving models!")
-            pickle.dump(disc_costs, open(OUTPUT_PATH + "costs.p", "wb"))
+            pickle.dump(gen_costs, open(OUTPUT_PATH + "gen_costs.p", "wb"))
+            pickle.dump(disc_costs, open(OUTPUT_PATH + "disc_costs.p", "wb"))
             torch.save(aG, OUTPUT_PATH + generator_file)
             torch.save(aD, OUTPUT_PATH + discriminator_file)
 
