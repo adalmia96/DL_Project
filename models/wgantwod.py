@@ -23,6 +23,7 @@ import preprocessing as pp
 import nltk
 from pytorch_pretrained_bert import BertTokenizer,BertForMaskedLM
 import math
+from pytorchtools import EarlyStopping
 
 # Replace your training data path here
 DATA_DIR = './cache/training/'
@@ -344,7 +345,7 @@ class Discriminator(nn.Module):
         return output
 
 def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=0.0001, wv_length=50, seq_length=50, \
-    restore=False, discriminator_file="discriminator.pt", generator_file="generator.pt"):
+    restore=False, patience=200, discriminator_file="discriminator.pt", generator_file="generator.pt"):
 
     print("Training!")
     #---------------------Initialize Stuff------------------------
@@ -378,6 +379,8 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
     mone = mone.to(device)
 
     fixed_noise = gen_rand_noise(batch_size) # batch_size x 128
+    early_stopping = EarlyStopping(patience=patience, verbose=False, \
+        gname=generator_file, dname=discriminator_file)
 
     #---------------------Start Actual Training------------------------
     dataloader = training_data_loader
@@ -444,6 +447,11 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
             w_dist = disc_fake  - disc_real
             optimizer_d.step()
 
+        early_stopping(disc_cost, aG, aD)
+
+        if early_stopping.early_stop:
+            print("Early stopping at epoch " + str(epoch))
+            break
 
         #---------------VISUALIZATION---------------------
         #if True:
@@ -473,6 +481,7 @@ def get_bert_score(sentence, tokenizer, bertMaskedLM):
 def test(we_model, num_images=128, wv_length=50, seq_length=50, generator_file="generator.pt"):
 
     aG = torch.load(OUTPUT_PATH + generator_file)
+    #aG.eval() #TODO check if this is necessary
     sentences = []
     images_per_batch = 32
     for i in range(int(num_images / images_per_batch)):

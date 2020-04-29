@@ -5,6 +5,6 @@ trainingInput:
     masterConfig:
         acceleratorConfig: 
             count: 1
-            type: NVIDIA_TESLA_T4 #Other options: K80, P4, P100, T4, V100 - most expensive for some reason
+            type: NVIDIA_TESLA_T4 #Other options: K80, P4, P100, T4, V100
 
 
