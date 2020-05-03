@@ -27,7 +27,7 @@ JOB_NAME=gans_training_job_$(date +%Y%m%d_%H%M%S)
 #JOB_DIR=gs://${BUCKET_ID}/models
 # Note: these files have already been copied over when the image was built
 TRAIN_FILE=news.2009.en.shuffled
-WE_FILE=glove.6B.200d.w2v.txt
+WE_FILE=glove.6B.100d.w2v.txt
 #WE_FILE=jose_100d.w2v.txt
 MODEL=wgantwod
 
@@ -40,10 +40,10 @@ gcloud beta ai-platform jobs submit training ${JOB_NAME} \
 	--model ${MODEL} \
 	--train-epochs=10000 \
 	--batch-size=64 \
-    --word-vector-length 200 \
+    --word-vector-length 100 \
     --sequence-length 50 \
-    --generator-file 20050glovegenerator.pt \
-    --discriminator-file 20050glovediscriminator.pt \
+    --generator-file 10050glovegenerator.pt \
+    --discriminator-file 10050glovediscriminator.pt \
     --patience 1000 \
     --num-data 250000
 

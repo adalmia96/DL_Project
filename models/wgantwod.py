@@ -344,8 +344,8 @@ class Discriminator(nn.Module):
         output = output.view(-1) #144
         return output
 
-def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, lr=0.0001, wv_length=50, seq_length=50, \
-    restore=False, patience=200, discriminator_file="discriminator.pt", generator_file="generator.pt"):
+def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_term=10, g_lr=0.0001, d_lr=0.0001, wv_length=50, \
+seq_length=50, restore=False, patience=200, discriminator_file="discriminator.pt", generator_file="generator.pt"):
 
     print("Training!")
     #---------------------Initialize Stuff------------------------
@@ -369,8 +369,8 @@ def train(we_model, batch_size=64, epochs=10000, d_iters=5, g_iters=1, lambda_te
         aD.apply(weights_init)
 
 
-    optimizer_g = torch.optim.Adam(aG.parameters(), lr=lr, betas=(0,0.9))
-    optimizer_d = torch.optim.Adam(aD.parameters(), lr=lr, betas=(0,0.9))
+    optimizer_g = torch.optim.Adam(aG.parameters(), lr=g_lr, betas=(0,0.9))
+    optimizer_d = torch.optim.Adam(aD.parameters(), lr=d_lr, betas=(0,0.9))
     one = torch.tensor(1.0)
     mone = one * -1
     aG = aG.to(device)

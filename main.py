@@ -83,8 +83,14 @@ def get_args():
         type=int,
         )
     args_parser.add_argument(
-        '--learning-rate',
-        help='Learning rate.',
+        '--g-learning-rate',
+        help='Generator learning rate.',
+        default=0.0001,
+        type=float,
+        )
+    args_parser.add_argument(
+        '--d-learning-rate',
+        help='Discriminator learning rate.',
         default=0.0001,
         type=float,
         )
@@ -136,7 +142,7 @@ def main():
             print("In train")
             models.wgantwod.train(we_model=we_model, batch_size=args.batch_size, epochs=args.train_epochs, \
                 d_iters=args.train_d_iters, g_iters=args.train_g_iters, lambda_term=args.lambda_term, \
-                lr=args.learning_rate, wv_length=args.word_vector_length, \
+                g_lr=args.g_learning_rate, d_lr=args.d_learning_rate, wv_length=args.word_vector_length, \
                 seq_length=args.sequence_length, restore=args.restore, patience=args.patience, \
                 discriminator_file=args.discriminator_file, generator_file=args.generator_file)
 

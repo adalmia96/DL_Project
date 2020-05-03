@@ -4,10 +4,10 @@ DIR="$(cd "$(dirname "$0")" && pwd -P)"
 cd $DIR/..
 
 TRAIN_FILE='news.2009.en.shuffled'
-#WE_FILE='glove.6B.100d.w2v.txt'
-WE_FILE='jose_100d.w2v.txt'
+WE_FILE='glove.6B.50d.w2v.txt'
+#WE_FILE='jose_50d.w2v.txt'
 SENTENCE_LENGTH=50
-WV_LENGTH=100
+WV_LENGTH=50
 MODEL='wgantwod'
 
 ARGUMENTS="--train-file $TRAIN_FILE --we-file $WE_FILE --sequence-length $SENTENCE_LENGTH --word-vector-length $WV_LENGTH  \
@@ -18,7 +18,8 @@ ARGUMENTS="--train-file $TRAIN_FILE --we-file $WE_FILE --sequence-length $SENTEN
     --train-d-iters 1 \
     --train-g-iters 1 \
     --lambda-term 10 \
-    --learning-rate 0.0001 \
+    --g-learning-rate 0.0001 \
+    --d-learning-rate 0.0001 \
     --generator-file generator.pt \
     --discriminator-file discriminator.pt \
     --test-num-images 128 \
