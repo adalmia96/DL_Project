@@ -127,11 +127,14 @@ def main():
     
     print("Running main.py with these parameters: ")
     print(args)
-
     if args.model == 'wgantwod':
         import models.wgantwod
         from gensim.models.keyedvectors import KeyedVectors
         we_model = KeyedVectors.load_word2vec_format(DATA_DIR+args.we_file, binary=False)
+
+        if args.mode =="image":
+            print("generating image")
+            pp.create_fancy_image("The quick brown fox jumps over the lazy dog.", we_model=we_model, word_array_size=args.sequence_length, word_vector_size=args.word_vector_length)
 
         if args.mode == "preprocess":
             print("in preprocess")

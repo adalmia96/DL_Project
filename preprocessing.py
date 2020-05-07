@@ -96,7 +96,7 @@ def create_fancy_image(s, we_model, word_array_size=50, word_vector_size=50):
     array = array[0]
     scaled = (255*(array - np.min(array))/np.ptp(array)).astype('uint8')
     img = Image.fromarray(scaled)
-    img = img.rotate(90).resize((400, 400))
+    #img = img.rotate(90)#.resize((400, 400))
     img.save('./output/image.png', 'png')
 
 def preprocess(we_model, training_data, num_data=250000, word_array_size=50, word_vector_size=50):

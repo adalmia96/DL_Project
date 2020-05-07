@@ -42,10 +42,10 @@ gcloud beta ai-platform jobs submit training ${JOB_NAME} \
 	--batch-size=64 \
     --word-vector-length 100 \
     --sequence-length 50 \
-    --generator-file 1d5gglovegenerator.pt \
-    --discriminator-file 1d5gglovediscriminator.pt \
-    --train-g-iters 1 \
-    --train-d-iters 5 \
+    --generator-file 2g2dglovegenerator.pt \
+    --discriminator-file 2g2dglovediscriminator.pt \
+    --train-g-iters 2 \
+    --train-d-iters 2 \
     --patience 1000 \
     --num-data 250000
     #--d-learning-rate 0.00001 \

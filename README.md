@@ -11,7 +11,7 @@ Alternatively, modify and run the following
 ```
 ./scripts/run.sh [preprocess | train | test]
 ```
-Output is saved to the `output` folder.
+Output is saved to the `output` folder. There is also an `image` option to generate a pictoral image of a given sentence.
 
 ## Further Setup for GCP
 Ensure you have [`gsutils`](https://cloud.google.com/storage/docs/gsutil_install) installed. Put your train and dev data in GCP Storage under namespace `/data`. Then run `./scripts/train-cloud.sh` after adjusting hyperparameters, or submit a hyperparameter job. You can view logs using the script or on the GCP platform. The final model is saved to the `/models` namespace.
