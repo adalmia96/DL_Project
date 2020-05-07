@@ -23,7 +23,6 @@ import preprocessing as pp
 import nltk
 from pytorch_pretrained_bert import BertTokenizer,BertForMaskedLM
 import math
-from pytorchtools import EarlyStopping
 
 # Replace your training data path here
 DATA_DIR = './cache/training/'
@@ -379,8 +378,6 @@ seq_length=50, restore=False, patience=200, discriminator_file="discriminator.pt
     mone = mone.to(device)
 
     fixed_noise = gen_rand_noise(batch_size) # batch_size x 128
-    #early_stopping = EarlyStopping(patience=patience, verbose=False, \
-    #    gname=generator_file, dname=discriminator_file)
 
     #---------------------Start Actual Training------------------------
     dataloader = training_data_loader
@@ -448,12 +445,6 @@ seq_length=50, restore=False, patience=200, discriminator_file="discriminator.pt
             disc_cost.backward()
             w_dist = disc_fake  - disc_real
             optimizer_d.step()
-
-        #early_stopping(disc_cost, aG, aD)
-
-        #if early_stopping.early_stop:
-        #    print("Early stopping at epoch " + str(epoch))
-        #    break
 
         #---------------VISUALIZATION---------------------
         #if True:
